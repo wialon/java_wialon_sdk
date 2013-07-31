@@ -81,6 +81,7 @@ public class UnitsSearchExample implements Runnable {
 				super.onSuccess(response);
 				// logout succeed
 				System.out.println("Logout successfully");
+				System.exit(0);
 			}
 
 			@Override
@@ -88,6 +89,7 @@ public class UnitsSearchExample implements Runnable {
 				super.onFailure(errorCode, throwableError);
 				// logout failed, print error
 				System.out.println(Errors.getErrorText(errorCode));
+				System.exit(0);
 			}
 		});
 	}
