@@ -2,16 +2,16 @@ package com.wialon.item;
 
 import com.google.gson.JsonElement;
 import com.wialon.core.Session;
-import com.wialon.remote.RemoteHttpClient;
-import com.wialon.remote.ResponseHandler;
 import com.wialon.messages.Message;
 import com.wialon.messages.UnitData;
+import com.wialon.remote.RemoteHttpClient;
+import com.wialon.remote.handlers.ResponseHandler;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Unit extends Item {
+public class Unit extends ItemIcon {
 	private String uid;
 	private Long hw;
 	private String ph;
@@ -25,6 +25,7 @@ public class Unit extends Item {
 	private Long cneh;
 	private Long cnkb;
 	private Map<String, Object> prms;
+	public Map<String, String> flds;
 
 	public Unit () {
 		itemType=ItemType.avl_unit;

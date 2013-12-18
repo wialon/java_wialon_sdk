@@ -1,12 +1,10 @@
-package com.wialon.remote;
-
-import com.wialon.item.Item;
+package com.wialon.remote.handlers;
 
 /**
  * Callback from server request
  */
 public abstract class ResponseHandler {
-	private ResponseHandler callback;
+	protected ResponseHandler callback;
 
 	public ResponseHandler(){}
 
@@ -21,15 +19,6 @@ public abstract class ResponseHandler {
 	public void onSuccess (String response){
 		if (callback!=null)
 			callback.onSuccess(response);
-	}
-
-	/**
-	 * This method calls on success Session.searchItems(), Session.searchItem() and Session.create(Unit|User|UnitGroup|Resource)
-	 * @param items found items array, maybe empty
-	 */
-	public void onSuccessSearch (Item... items) {
-		if (callback!=null)
-			callback.onSuccessSearch(items);
 	}
 
 	/**

@@ -15,7 +15,8 @@ public abstract class EventProvider {
 			handlers=new ArrayList<EventHandler>();
 			eventHandlers.put(event, handlers);
 		}
-		handlers.add(eventHandler);
+		if (!handlers.contains(eventHandler))
+			handlers.add(eventHandler);
 	}
 
 	public void removeListener(EventHandler eventHandler, Enum event){
@@ -32,10 +33,10 @@ public abstract class EventProvider {
 		eventHandlers.clear();
 	}
 
-	protected void fireEvent(Enum event, Object object, Object oldData, Object newData) {
-		if (oldData!=null && newData!=null)
-			if (oldData.equals(newData))
-				return;
+	public void fireEvent(Enum event, Object object, Object oldData, Object newData) {
+//		if (oldData!=null && newData!=null)
+//			if (oldData.equals(newData))
+//				return;
 		if (eventHandlers.get(events.All)!=null)
 			for (EventHandler handler : eventHandlers.get(events.All))
 				handler.onEvent(event, (object==null ? this : object), oldData, newData);
@@ -45,7 +46,7 @@ public abstract class EventProvider {
 		}
 	}
 
-	protected void fireEvent(Enum event, Object oldData, Object newData) {
+	public void fireEvent(Enum event, Object oldData, Object newData) {
 		fireEvent(event, null, oldData, newData);
 	}
 

@@ -1,7 +1,10 @@
 package com.wialon.remote;
 
-import com.wialon.util.Debug;
 import com.google.gson.JsonParser;
+import com.wialon.core.Session;
+import com.wialon.remote.handlers.BinaryResponseHandler;
+import com.wialon.remote.handlers.ResponseHandler;
+import com.wialon.util.Debug;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -30,30 +33,54 @@ public class HttpRequest implements Runnable {
 			Debug.log.info("Start sending request");
 			HttpResponse httpResponse=client.execute(request);
 			StatusLine status = httpResponse.getStatusLine();
-			String responseBody=null;
-			HttpEntity entity;
 			HttpEntity temp = httpResponse.getEntity();
-			if(temp != null) {
-				entity = new BufferedHttpEntity(temp);
-				responseBody = EntityUtils.toString(entity, "UTF-8");
+			if (callback instanceof BinaryResponseHandler) {
+				processBinaryAnswer(temp, status);
+			} else {
+				processStringAnswer(temp, status);
 			}
-			if(status.getStatusCode() != HttpStatus.SC_OK)
-				callback.onFailure(6, new HttpResponseException(status.getStatusCode(), status.getReasonPhrase() + "|" + responseBody));
-			else {
-				if (responseBody!=null) {
-					if (responseBody.contains("error")) {
-						int error=new JsonParser().parse(responseBody).getAsJsonObject().get("error").getAsInt();
-						if (error!=0)
-							callback.onFailure(error, null);
-						else
-							callback.onSuccess(responseBody);
-					} else
-						callback.onSuccess(responseBody);
-				}
-			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			callback.onFailure(6, e);
+		}
+	}
+
+	private void processBinaryAnswer(HttpEntity temp, StatusLine status) throws IOException{
+		HttpEntity entity = null;
+		byte[] responseBody;
+		if(temp != null) {
+			entity = new BufferedHttpEntity(temp);
+			}
+			responseBody = EntityUtils.toByteArray(entity);
+		if(status.getStatusCode() != HttpStatus.SC_OK) {
+			callback.onFailure(6, new HttpResponseException(status.getStatusCode(), status.getReasonPhrase()));
+		} else {
+			((BinaryResponseHandler)callback).onSuccessBinary(responseBody);
+		}
+	}
+
+	private void processStringAnswer(HttpEntity temp, StatusLine status) throws IOException{
+		HttpEntity entity;
+		String responseBody=null;
+		if(temp != null) {
+			entity = new BufferedHttpEntity(temp);
+			responseBody = EntityUtils.toString(entity, "UTF-8");
+		}
+		if(status.getStatusCode() != HttpStatus.SC_OK)
+			callback.onFailure(6, new HttpResponseException(status.getStatusCode(), status.getReasonPhrase() + "|" + responseBody));
+		else {
+			if (responseBody!=null) {
+				if (responseBody.contains("error") &&
+						Session.getInstance().getJsonParser().parse(responseBody).isJsonObject() &&
+						Session.getInstance().getJsonParser().parse(responseBody).getAsJsonObject().has("error")) {
+					int error=new JsonParser().parse(responseBody).getAsJsonObject().get("error").getAsInt();
+					if (error!=0)
+						callback.onFailure(error, null);
+					else
+						callback.onSuccess(responseBody);
+				} else
+					callback.onSuccess(responseBody);
+			}
 		}
 	}
 }

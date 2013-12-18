@@ -1,9 +1,20 @@
 package com.wialon.item;
 
+import com.wialon.item.prop.Report;
+
+import java.util.Map;
+
 public class Resource extends Item {
 //Todo fields and methods
 	public Resource() {
 		itemType=ItemType.avl_resource;
+	}
+	private Map<String, String> rep;
+	//Plugins
+	private Report reportPlugin;
+
+	public Report loadReportPlugin(){
+		return reportPlugin==null ? reportPlugin=new Report(rep, "rep", this, "report/update_report", "report/get_report_data") : reportPlugin;
 	}
 
 	/** Data flags constants */
@@ -184,5 +195,11 @@ public class Resource extends Item {
 		public String getValue() {
 			return value;
 		}
+	}
+
+	/** Events */
+	public static enum events {
+		/** name property has changed */
+		updateReport
 	}
 }

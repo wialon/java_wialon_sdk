@@ -2,10 +2,10 @@ package com.wialon.item;
 
 import com.wialon.core.Session;
 import com.wialon.remote.RemoteHttpClient;
-import com.wialon.remote.ResponseHandler;
+import com.wialon.remote.handlers.ResponseHandler;
 import com.google.gson.JsonElement;
 
-public class UnitGroup extends Item {
+public class UnitGroup extends ItemIcon {
 	private Long[] u;
 
 	public UnitGroup(){

@@ -2,7 +2,7 @@ package com.wialon.item;
 
 import com.google.gson.JsonElement;
 import com.wialon.remote.RemoteHttpClient;
-import com.wialon.remote.ResponseHandler;
+import com.wialon.remote.handlers.ResponseHandler;
 
 public class User extends Item {
  	private Long fl;

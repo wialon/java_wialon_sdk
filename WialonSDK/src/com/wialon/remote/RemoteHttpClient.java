@@ -1,6 +1,7 @@
 package com.wialon.remote;
 
 import com.wialon.core.Session;
+import com.wialon.remote.handlers.ResponseHandler;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -9,6 +10,8 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpProtocolParams;
+import org.apache.http.protocol.HTTP;
 
 import java.io.UnsupportedEncodingException;
 import java.util.LinkedList;
@@ -44,6 +47,8 @@ public class RemoteHttpClient {
 
 	public DefaultHttpClient getNewHttpClient() {
 		BasicHttpParams httpParams = new BasicHttpParams();
+		HttpProtocolParams.setContentCharset(httpParams, HTTP.UTF_8);
+		HttpProtocolParams.setHttpElementCharset(httpParams, HTTP.UTF_8);
 		// Set the timeout in milliseconds until a connection is established.
 		// The default value is zero, that means the timeout is not used.
 		HttpConnectionParams.setConnectionTimeout(httpParams, DEFAULT_SOCKET_TIMEOUT);
@@ -69,8 +74,9 @@ public class RemoteHttpClient {
 	public void post(String url, List<NameValuePair> params, DefaultHttpClient httpClient, ResponseHandler callback){
 		try {
 			HttpPost httpPost=new HttpPost(url);
-			httpPost.setEntity(new UrlEncodedFormEntity(params));
-			if (isMultiHttpClientEnabled && httpClient!=null)
+			if (params!=null)
+				httpPost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+			if (isMultiHttpClientEnabled && httpClient==null)
 				defaultHttpClient=getNewHttpClient();
 			sendRequest((httpClient==null ? defaultHttpClient : httpClient) , httpPost, callback);
 		} catch (UnsupportedEncodingException e) {

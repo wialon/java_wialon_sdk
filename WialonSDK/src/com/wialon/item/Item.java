@@ -3,11 +3,12 @@ package com.wialon.item;
 import com.wialon.core.EventProvider;
 import com.wialon.core.Session;
 import com.wialon.remote.RemoteHttpClient;
-import com.wialon.remote.ResponseHandler;
+import com.wialon.remote.handlers.ResponseHandler;
 import com.wialon.messages.Message;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class Item extends EventProvider {
@@ -22,9 +23,26 @@ public abstract class Item extends EventProvider {
 	private Long bact;
 	//Custom properties
 	private Map<String, String> prp;
+	private Map<String, IUpdateItemProperty> updateItemPropertyFunctions;
 
 	protected ItemType itemType;
 	//Todo custom & admin fields
+
+	public interface IUpdateItemProperty{
+		public void updateItemProperty(JsonElement data);
+	}
+
+	/**
+	 * Register item property handler of given name
+	 * @param propName Property name
+	 * @param function function
+	 */
+	public void registerItemPropertyHandler(String propName, IUpdateItemProperty function){
+		if (updateItemPropertyFunctions==null)
+			updateItemPropertyFunctions=new HashMap<String, IUpdateItemProperty>();
+		if (!updateItemPropertyFunctions.containsKey(propName))
+			updateItemPropertyFunctions.put(propName, function);
+	}
 	/**
 	 * Get item type
 	 * @return Item type
@@ -254,6 +272,8 @@ public abstract class Item extends EventProvider {
 			setCreatorId(data.getAsNumber().longValue());
 		} else if (key.equals("bact") && data.getAsNumber()!=null) {
 			setAccountId(data.getAsNumber().longValue());
+		} else if (updateItemPropertyFunctions!=null && updateItemPropertyFunctions.containsKey(key)) {
+			updateItemPropertyFunctions.get(key).updateItemProperty(data);
 		} else {
 			return false;
 		}

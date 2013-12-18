@@ -3,16 +3,19 @@ package com.wialon.core;
 import com.wialon.extra.SearchSpec;
 import com.wialon.extra.UpdateSpec;
 import com.wialon.remote.RemoteHttpClient;
-import com.wialon.remote.ResponseHandler;
+import com.wialon.remote.handlers.ResponseHandler;
 import com.wialon.item.Item;
 import com.wialon.item.User;
 import com.wialon.messages.Message;
+import com.wialon.remote.handlers.SearchResponseHandler;
+import com.wialon.render.Renderer;
 import com.wialon.util.Debug;
 import com.google.gson.*;
 import org.apache.http.NameValuePair;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -41,6 +44,9 @@ public class Session extends EventProvider {
 	private Map<Long, Item> itemsById;
 	private Map<Item.ItemType, List<Item>> itemsByType;
 	private Map<Integer, Item.ItemType> classes;
+	private Renderer renderer;
+	/** messages loader object*/
+	private MessagesLoader messagesLoader;
 
 	public static Session getInstance() {
 		return instance;
@@ -89,12 +95,19 @@ public class Session extends EventProvider {
 	 */
 	public boolean initSession(String baseUrl) {
 		this.baseUrl=baseUrl;
+		this.renderer=new Renderer();
+		this.messagesLoader=new MessagesLoader();
 		if (httpClient==null)
 			httpClient= RemoteHttpClient.getInstance();
 		if (jsonParser==null)
 			jsonParser=new JsonParser();
 		if (gson==null)
-			gson=new Gson();
+			gson=new GsonBuilder().registerTypeAdapter(String.class, new JsonDeserializer<String>(){
+				@Override
+				public String deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+					return jsonElement.isJsonPrimitive() ? jsonElement.getAsString() : jsonElement.toString();
+				}
+			}).create();
 		return initialized=true;
 	}
 
@@ -139,24 +152,37 @@ public class Session extends EventProvider {
 			}
 		});
 	}
+
+	/**
+	 * Create authorization hash that can be used to create copy of session from any IP
+	 * @param callback {ResponseHandler} callback function that is called after login: {authHash: "XXX"}, where zero code is success
+	 */
+	public void createAuthHash(ResponseHandler callback) {
+		if (currUser==null && callback!=null) {
+			callback.onFailure(2, null);
+			return;
+		}
+		httpClient.remoteCall("core/create_auth_hash", "{}", callback);
+	}
+
 	/**
 	 * Search for items
-	 * @param searchSpec {SearchSpec}
+	 * @param searchSpec
 	 *		Search specification in form: {itemsType: "", propName: "", propValueMask: "", sortType: ""}
 	 *		where itemsType: type of items to search for
 	 *		propName - name of property for filtering, usually "sys_name"
 	 *		propValueMask - value mask of property for filtering, asteriks can be used
 	 *		propType[optional] - type of property, should be empty for simple properties, optional values are: "guid" - convert property value from id to GUID, "list" - search for ID in list property (e.g. unit in group), "propitemname" - search for prop item name, e.g. custom fields, sensors
 	 *		sortType - name of property that will be used for sorting, if any, usually used "sys_name"
-	 * @param forceRefresh {int}: if non-zero value used, skip any caching and perform operation in realtime (try to avoid passing 1 here)
-	 * @param dataFlags {long}: what data-flags returned items should have
-	 * @param indexFrom {int}: starting index for returning result, for new searches use zero value
-	 * @param indexTo {int}: ending index for returning result, for new searches use ('max number of items to return'-1) value
-	 * @param callback {ResponseHandler} callback function that is called after remote call: callback(code, data),
+	 * @param forceRefresh  if non-zero value used, skip any caching and perform operation in realtime (try to avoid passing 1 here)
+	 * @param dataFlags what data-flags returned items should have
+	 * @param indexFrom  starting index for returning result, for new searches use zero value
+	 * @param indexTo ending index for returning result, for new searches use ('max number of items to return'-1) value
+	 * @param callback callback function that is called after remote call: callback(code, data),
 	 *		where code: operation result code (zero is success)
 	 *		data (result) consists of: {items: [], dataFlags: 0x10, totalItemsCount: 100, indexFrom: 0, indexTo: 9, searchSpec: {...}}
 	 */
-	public void searchItems(SearchSpec searchSpec, int forceRefresh, long dataFlags, int indexFrom, int indexTo, ResponseHandler callback) {
+	public void searchItems(SearchSpec searchSpec, int forceRefresh, long dataFlags, int indexFrom, int indexTo, SearchResponseHandler callback) {
 		if (currUser==null || searchSpec==null) {
 			callback.onFailure(2, null);
 			return;
@@ -177,7 +203,7 @@ public class Session extends EventProvider {
 	 * @param dataFlags {Integer}: what data-flags returned item should have
 	 * @param callback {?Function} callback function that is called after remote call: callback(code, item)
 	 */
-	public void searchItem(long id, long dataFlags, ResponseHandler callback) {
+	public void searchItem(long id, long dataFlags, SearchResponseHandler callback) {
 		if (this.currUser==null) {
 			callback.onFailure(2, null);
 			return;
@@ -221,6 +247,22 @@ public class Session extends EventProvider {
 	}
 
 	/**
+	 * Get renderer object for given session
+	 * @return renderer
+	 */
+	public Renderer getRenderer() {
+		return this.renderer;
+	}
+
+	/**
+	 * Get messages loader object for given session
+	 * @return MessagesLoader renderer
+	 */
+	public MessagesLoader getMessagesLoader(){
+		return this.messagesLoader;
+	}
+
+	/**
 	 * Check on initialize Wialon session
 	 * @return {boolean} initialization state
 	 */
@@ -234,6 +276,27 @@ public class Session extends EventProvider {
 	 */
 	public String getBaseUrl() {
 		return baseUrl;
+	}
+
+	/**
+	 * Get base URL for GIS service
+	 * @param gisType type of GIS function: render, search, geocode
+	 * @return base URL suitable for prepending GIS requests of given type
+	 */
+	public String getBaseGisUrl(String gisType) {
+		if (!this.baseUrl.equals("")) {
+			// extract DNS of Wialon server from base URL (e.g. http://kit-api.wialon.com)
+			String[] arr = this.baseUrl.split("//");
+			if (arr.length >= 2) {
+				if (gisType.equals("render"))
+					return "http://render.mapsviewer.com/" + arr[1];
+				else if (gisType.equals("search"))
+					return "http://search.mapsviewer.com/" + arr[1];
+				else if (gisType.equals("geocode"))
+					return "http://geocode.mapsviewer.com/" + arr[1];
+			}
+		}
+		return this.baseUrl;
 	}
 	/**
 	 * Get latest known server time
@@ -309,7 +372,7 @@ public class Session extends EventProvider {
 	 * @param dataFlags which flags initially to return
 	 * @param callback callback function that is called after remote call with new Unit object, important: obj is not loaded into session
 	 */
-	public void createUnit (User creator, String name, long hwTypeId, long dataFlags, ResponseHandler callback) {
+	public void createUnit (User creator, String name, long hwTypeId, long dataFlags, SearchResponseHandler callback) {
 		if (currUser==null) {
 			callback.onFailure(2, null);
 			return;
@@ -328,7 +391,7 @@ public class Session extends EventProvider {
 	 * @param dataFlags which flags initially to return
 	 * @param callback callback function that is called after remote call with new User object, important: obj is not loaded into session
 	 */
-	public void createUser (User creator, String name, String password, long dataFlags,ResponseHandler callback) {
+	public void createUser (User creator, String name, String password, long dataFlags, SearchResponseHandler callback) {
 		if (currUser==null) {
 			callback.onFailure(2, null);
 			return;
@@ -347,7 +410,7 @@ public class Session extends EventProvider {
 	 * @param dataFlags which flags initially to return
 	 * @param callback callback function that is called after remote call with new UnitGroup object, important: obj is not loaded into session
 	 */
-	public void createUnitGroup(User creator, String name, long dataFlags, ResponseHandler callback) {
+	public void createUnitGroup(User creator, String name, long dataFlags, SearchResponseHandler callback) {
 		if (currUser==null) {
 			callback.onFailure(2, null);
 			return;
@@ -366,7 +429,7 @@ public class Session extends EventProvider {
 	 * @param dataFlags which flags initially to return
 	 * @param callback callback function that is called after remote call with new Resource object, important: obj is not loaded into session
 	 */
-	public void createResource(User creator, String name, long dataFlags, ResponseHandler callback) {
+	public void createResource(User creator, String name, long dataFlags, SearchResponseHandler callback) {
 		if (currUser==null) {
 			callback.onFailure(2, null);
 			return;
@@ -540,6 +603,8 @@ public class Session extends EventProvider {
 		itemsById=null;
 		itemsByType=null;
 		classes=null;
+		renderer=null;
+		messagesLoader=null;
 	}
 
 	private void onLoginResult (String result, ResponseHandler callback) {
@@ -603,7 +668,8 @@ public class Session extends EventProvider {
 		if (itemJson==null || !itemJson.isJsonObject() || itemFlags==null || itemFlags.getAsNumber()==null){
 			return;
 		}
-		callback.onSuccessSearch(constructItem(itemJson.getAsJsonObject(), itemFlags.getAsLong()));
+		if (callback instanceof SearchResponseHandler)
+			((SearchResponseHandler)callback).onSuccessSearch(constructItem(itemJson.getAsJsonObject(), itemFlags.getAsLong()));
 	}
 	/**
 	 * Handle items search result from server
@@ -638,7 +704,8 @@ public class Session extends EventProvider {
 				Debug.log.info("ERROR");
 			}
 		}
-		callback.onSuccessSearch(items);
+		if (callback instanceof  SearchResponseHandler)
+			((SearchResponseHandler)callback).onSuccessSearch(items);
 	}
 
 	private void onDataFlagsUpdated(String result, ResponseHandler callback) {
