@@ -7,7 +7,7 @@ import com.wialon.core.Session;
 import com.wialon.extra.UpdateSpec;
 import com.wialon.item.Item;
 import com.wialon.item.Unit;
-import com.wialon.remote.ResponseHandler;
+import com.wialon.remote.handlers.ResponseHandler;
 
 import java.io.IOException;
 import java.util.Collection;
