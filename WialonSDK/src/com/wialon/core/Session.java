@@ -130,6 +130,25 @@ public class Session extends EventProvider {
 			}
 		});
 	}
+
+	/**
+	 * Perform login to Wialon server using authorization hash. Auth hash can be fetched with wialon.core.Session.createAuthHash
+	 * @param authHash authorization hash
+	 * @param callback  callback function that is called after login
+	 */
+	public void loginAuthHash(String authHash, ResponseHandler callback) {
+		if (currUser!=null || !isInitialized()) {
+			callback.onFailure(2, null);
+			return;
+		}
+		httpClient.remoteCall("core/use_auth_hash", "{\"authHash\":\""+authHash+"\"}", new ResponseHandler(callback){
+			@Override
+			public void onSuccess(String response) {
+				onLoginResult(response, this.getCallback());
+			}
+		});
+	}
+
 	/**
 	 * Logout from Wialon server.
 	 * @param callback {ResponseHandler} callback function that is called after logout: where zero is success
@@ -139,15 +158,17 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
+		//Clean up session immediately
+		cleanupSession();
 		httpClient.remoteCall("core/logout", "{}", new ResponseHandler(callback) {
 			@Override
 			public void onSuccess(String response) {
-				cleanupSession();
+				//cleanupSession();
 				super.onSuccess(response);
 			}
 			@Override
 			public void onFailure(int errorCode, Throwable throwableError) {
-				cleanupSession();
+				//cleanupSession();
 				super.onFailure(errorCode, throwableError);
 			}
 		});
