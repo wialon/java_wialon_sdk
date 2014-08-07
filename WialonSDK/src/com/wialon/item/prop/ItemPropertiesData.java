@@ -7,10 +7,10 @@ import com.wialon.remote.handlers.ResponseHandler;
 
 import java.util.Map;
 
-public abstract class ItemPropertiesData extends ItemProperties {
+public class ItemPropertiesData extends ItemProperties {
 	private String extAjaxPath;
 
-	protected ItemPropertiesData(Map<String, String> data, String propName, Item item, Enum event, String ajaxPath, String extAjaxPath) {
+	public ItemPropertiesData(Map<String, String> data, String propName, Item item, Enum event, String ajaxPath, String extAjaxPath) {
 		super(data, propName, item, event, ajaxPath);
 		this.extAjaxPath=extAjaxPath;
 	}

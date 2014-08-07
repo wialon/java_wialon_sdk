@@ -1,5 +1,7 @@
 package com.wialon.remote;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.wialon.core.Session;
 import com.wialon.remote.handlers.ResponseHandler;
 import org.apache.http.HttpVersion;
@@ -25,6 +27,7 @@ import org.apache.http.protocol.HTTP;
 
 import java.io.UnsupportedEncodingException;
 import java.security.KeyStore;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -37,6 +40,7 @@ public class RemoteHttpClient {
 	private ThreadPoolExecutor threadPool;
 	private static boolean isMultiHttpClientEnabled = false;
 	private static RemoteHttpClient instance = new RemoteHttpClient();
+	private List<BatchCall> batchCalls=null;
 	//private final HttpContext httpContext;
 
 	public static RemoteHttpClient getInstance() {
@@ -105,16 +109,116 @@ public class RemoteHttpClient {
 //		return new DefaultHttpClient(httpParams);
 	}
 
+	/**
+	 * Start batch - set of remote calls in one AJAX request
+	 * @return {Boolean} if batch initialization has succeeded
+	 */
+	public boolean startBatch() {
+		if (batchCalls!=null)
+			return false;
+//		if (owner)
+//			this.__batchCallsOwner = owner;
+		batchCalls = new ArrayList<BatchCall>();
+		return true;
+	}
+	/**
+	 * Finish batch - perform all delayed calls in one AJAX request
+	 * @param callback function to call with result of AJAX call: callback(code, combinedCode). code is zero if no errors. combinedCode is zero if all combined requests where successfully.
+	 */
+	public void finishBatch(ResponseHandler callback) {
+		if (batchCalls==null) {
+			callback.onFailure(2, null);
+			return;
+		}
+//		// store finish batch callbacks
+//		this.__finishBatchCalls.push(callback);
+//		if (this.__batchCallsOwner && owner != this.__batchCallsOwner) {
+//			this.__finishBatchCalls.push(callback);
+//			return;
+//		}
+//		callback = wialon.util.Helper.wrapCallback(this.__finishBatchCalls);
+		if (batchCalls.size()==0) {
+			// nothing to call
+//			this.__finishBatchCalls = [];
+			batchCalls = null;
+			callback.onFailure(0, null);
+			return;
+		}
+		// construct batch call json and select max timeout
+		String params = "[";
+		final List<ResponseHandler> callbacks = new ArrayList<ResponseHandler>();
+		for (int i = 0; i < batchCalls.size(); i++) {
+			BatchCall call = batchCalls.get(i);
+			params+="{\"svc\":\""+call.svc+"\",\"params\":"+call.params+"}";
+			if (i+1<batchCalls.size())
+				params+=",";
+			callbacks.add(call.callback);
+		}
+		params+="]";
+		// reset batch call status
+		batchCalls = null;
+//		this.__finishBatchCalls = [];
+		remoteCall("core/batch", params, new ResponseHandler(callback) {
+			@Override
+			public void onSuccess(String response) {
+				onBatchCallCompleted(getCallback(), callbacks, response);
+			}
+		});
+	}
+
+	/**
+	 * Handle batch call completed event
+	 * @param callback callback to call with result code
+	 * @param batchCallbacks collection of callbacks for each batched call
+	 * @param results resulting data
+	 */
+	private void onBatchCallCompleted(ResponseHandler callback, List<ResponseHandler> batchCallbacks, String results) {
+		JsonArray resultsArray=Session.getInstance().getJsonParser().parse(results).getAsJsonArray();
+		if (results==null || batchCallbacks==null || resultsArray==null || batchCallbacks.size() != resultsArray.size()) {
+			int errorCode = 3;
+			// error doing request
+			// pass result for all callbacks
+			if (batchCallbacks!=null)
+				for (ResponseHandler batchCall : batchCallbacks)
+					batchCall.onFailure(errorCode, null);
+			callback.onFailure(errorCode, null);
+			return;
+		}
+		// fire callback for each call with its data
+		for (int i = 0; i < resultsArray.size(); i++) {
+			batchCallbacks.get(i).onSuccess(resultsArray.get(i).toString());
+		}
+		// finally fire our own callback
+		callback.onSuccess(results);
+	}
+//	/**
+//	 * Handle AJAX request result and call callback
+//	 * @param result {Object} result of operation, constructed from JSON
+//	 * @param callback {Function?null} callback in form callback(code, data)
+//	 */
+//	private void handleCallResult(result, callback) {
+//		if (result && typeof result.error != "undefined" && result.error != 0)
+//		return callback(result.error, null);
+//		else if (result)
+//			return callback(0, result);
+//		else
+//			return callback(3, null);
+//	}
+
 	public void remoteCall(String svc, String params, ResponseHandler callback) {
 		remoteCall(svc, params, null, callback);
 	}
 
 	public void remoteCall(String svc, String params, DefaultHttpClient httpClient, ResponseHandler callback) {
-		String url = Session.getInstance().getBaseUrl() + "/wialon/ajax.html?svc=" + svc + "&sid=" + Session.getInstance().getId();
-		List<NameValuePair> nameValuePairs = new LinkedList<NameValuePair>();
-		if (params != null)
-			nameValuePairs.add(new BasicNameValuePair("params", params));
-		post(url, nameValuePairs, httpClient, callback);
+		if (batchCalls!=null){
+			batchCalls.add(new BatchCall(svc, params, callback));
+		} else {
+			List<NameValuePair> nameValuePairs = new LinkedList<NameValuePair>();
+			if (params != null)
+				nameValuePairs.add(new BasicNameValuePair("params", params));
+			String url = Session.getInstance().getBaseUrl() + "/wialon/ajax.html?svc=" + svc + "&sid=" + Session.getInstance().getId();
+			post(url, nameValuePairs, httpClient, callback);
+		}
 	}
 
 	public void post(String url, List<NameValuePair> params, DefaultHttpClient httpClient, ResponseHandler callback) {
@@ -158,5 +262,17 @@ public class RemoteHttpClient {
 			}
 		}
 		return url;
+	}
+
+	private static class BatchCall{
+		String svc;
+		String params;
+		ResponseHandler callback;
+
+		public BatchCall(String svc, String params, ResponseHandler callback){
+			this.svc=svc;
+			this.params=params;
+			this.callback=callback;
+		}
 	}
 }

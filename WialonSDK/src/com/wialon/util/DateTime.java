@@ -57,7 +57,7 @@ public class DateTime {
 
 	public static DaylightSavingsTime getDSTSettings(Calendar calendar) {
 		DaylightSavingsTime daylightSavingsTime = new DaylightSavingsTime();
-		int dst = getTimezoneOffset() & DstFlags.TZ_CUSTOM_DST_MASK;
+		int dst = getTimezone() & DstFlags.TZ_CUSTOM_DST_MASK;
 		// check different types of DST offsets
 		switch (dst) {
 			case DstFlags.DST_MAR2SUN2AM_NOV1SUN2AM:

@@ -82,6 +82,29 @@ public class User extends Item {
 	}
 
 	/**
+	 * Get localization settings, remote call, require ACL bit wialon.item.Item.accessFlags.viewProperties over item
+	 * @param callback callback that get result of server operation in form callback(code, result), where result represents JSON data for localization settings
+	 */
+	public void getLocale(ResponseHandler callback) {
+		RemoteHttpClient.getInstance().remoteCall(
+				"user/get_locale",
+				"{\"userId\":"+this.getId()+"}",
+				callback
+		);
+	}
+//	/** Update this user localization settings
+//	 * @param locale {Object} localization parameters, format: {fd: text, wd: ubyte}
+//	 * @param callback {Function?null} callback that will receive information about localization update: callback(code), zero code is success
+//	 */
+//	public void updateLocale(String locale, callback) {
+//		return wialon.core.Remote.getInstance().remoteCall(
+//				"user/update_locale",
+//				{userId: this.getId(), locale: locale},
+//		wialon.util.Helper.wrapCallback(callback)
+//		);
+//	}
+
+	/**
 	 * Update password require ACL bit User.accessFlag.operateAs over user and correct oldPassword OR
 	 * User.accessFlag.editUserFlags and empty oldPassword
 	 * @param oldPassword old password if only User.accessFlag.operateAs acl bit available

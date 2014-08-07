@@ -46,14 +46,14 @@ public abstract class ItemProperties {
 	 * @return collection of item properties
 	 */
 	public Collection<String> getProperties(){
-		return data.values();
+		return data==null ? null : data.values();
 	}
 	/**
 	 * Return property item json
 	 * @param id item index
 	 */
 	public String getProperty(long id){
-		return data.get(String.valueOf(id));
+		return data==null ? null : data.get(String.valueOf(id));
 	}
 
 	/**

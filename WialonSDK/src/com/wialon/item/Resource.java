@@ -1,5 +1,6 @@
 package com.wialon.item;
 
+import com.wialon.item.prop.ItemPropertiesData;
 import com.wialon.item.prop.Report;
 
 import java.util.Map;
@@ -10,11 +11,17 @@ public class Resource extends Item {
 		itemType=ItemType.avl_resource;
 	}
 	private Map<String, String> rep;
+	private Map<String, String> unf;
 	//Plugins
 	private Report reportPlugin;
+	private ItemPropertiesData notificationPlugin;
 
 	public Report loadReportPlugin(){
 		return reportPlugin==null ? reportPlugin=new Report(rep, "rep", this, "report/update_report", "report/get_report_data") : reportPlugin;
+	}
+
+	public ItemPropertiesData getNotificationPlugin(){
+		return notificationPlugin==null ? notificationPlugin=new ItemPropertiesData(unf, "unf", this, events.updateNotification, "resource/update_notification", "resource/get_notification_data") : notificationPlugin;
 	}
 
 	/** Data flags constants */
@@ -200,6 +207,7 @@ public class Resource extends Item {
 	/** Events */
 	public static enum events {
 		/** name property has changed */
-		updateReport
+		updateReport,
+		updateNotification
 	}
 }
