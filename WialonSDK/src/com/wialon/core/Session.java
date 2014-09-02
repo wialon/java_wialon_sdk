@@ -73,13 +73,31 @@ public class Session extends EventProvider {
 	}
 	/**
 	 * Get collection of items of given type
-	 * @param itemsType {ItemType} Type of items to get, pass empty string to fetch all items (examples: "avl_unit", "avl_unit_group", "avl_resource", "avl_retranslator", "user")
-	 * @return {List} collection of items
+	 * @param itemsType {ItemType} Type of items to get, pass null to fetch all items
+	 * @return collection of items
 	 */
 	public Collection<Item> getItems(Item.ItemType itemsType) {
 		if (itemsById==null || itemsByType==null)
 			return null;
 		return itemsType!=null ? itemsByType.get(itemsType) : getItems();
+	}
+
+	/**
+	 * Get collection of items of given Class
+	 * @param itemClass Class of item
+	 * @param <T> Type
+	 * @return collection of items
+	 */
+	public <T extends Item> Collection<T> getItems(Class<T> itemClass) {
+		if (itemsById==null || itemsByType==null || itemClass==null)
+			return null;
+		Item.ItemType type=Item.ItemType.getItemTypeByClass(itemClass);
+		if (type!=null)
+			return (Collection<T>)itemsByType.get(Item.ItemType.getItemTypeByClass(itemClass));
+		else if (itemClass.equals(Item.class))
+			return (Collection<T>)getItems();
+		else
+			return null;
 	}
 
 	/**
@@ -158,8 +176,6 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
-		//Clean up session immediately
-		cleanupSession();
 		httpClient.remoteCall("core/logout", "{}", new ResponseHandler(callback) {
 			@Override
 			public void onSuccess(String response) {
@@ -172,6 +188,8 @@ public class Session extends EventProvider {
 				super.onFailure(errorCode, throwableError);
 			}
 		});
+		//Clean up session immediately
+		cleanupSession();
 	}
 
 	/**

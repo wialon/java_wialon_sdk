@@ -296,14 +296,22 @@ public abstract class Item extends EventProvider {
 		/** route */
 		avl_route (null);
 
-		private Class itemClass;
+		private Class mItemClass;
 
 		private ItemType(Class itemClass) {
-			this.itemClass=itemClass;
+			this.mItemClass=itemClass;
 		}
 
 		public Class getItemClass() {
-			return this.itemClass;
+			return this.mItemClass;
+		}
+
+		public static ItemType getItemTypeByClass(Class itemClass){
+			for (ItemType itemType : values()){
+				if (itemClass.equals(itemType.getItemClass()))
+					return itemType;
+			}
+			return null;
 		}
 	}
 
