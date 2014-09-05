@@ -1,9 +1,9 @@
 package com.wialon.remote;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.wialon.core.Session;
 import com.wialon.remote.handlers.ResponseHandler;
+
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -16,6 +16,9 @@ import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicNameValuePair;
@@ -25,6 +28,7 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.security.KeyStore;
 import java.util.ArrayList;
@@ -234,6 +238,23 @@ public class RemoteHttpClient {
 			callback.onFailure(6, e);
 		}
 	}
+
+    public void post(String svc, File file, String params, ResponseHandler callback) {
+        try {
+            String url = Session.getInstance().getBaseUrl() + "/wialon/ajax.html?svc=" + svc + "&sid=" + Session.getInstance().getId();
+            BasicNameValuePair nameValuePair = new BasicNameValuePair("params", params);
+            HttpPost httpPost = new HttpPost(url);
+            MultipartEntity multipartEntity = new MultipartEntity();
+            multipartEntity.addPart(nameValuePair.getName(), new StringBody(nameValuePair.getValue()));
+            multipartEntity.addPart("icon_file", new FileBody(file, "image/jpeg"));
+            httpPost.setEntity(multipartEntity);
+         /*   defaultHttpClient = getNewHttpClient();*/
+            sendRequest(defaultHttpClient, httpPost, callback);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            callback.onFailure(6, e);
+        }
+    }
 
 	public void post(String url, List<NameValuePair> params, int timeoutMs, ResponseHandler callback) {
 		post(url, params, getNewHttpClient(timeoutMs), callback);
