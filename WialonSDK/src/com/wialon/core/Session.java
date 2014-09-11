@@ -96,8 +96,7 @@ public class Session extends EventProvider {
 			return (Collection<T>)itemsByType.get(Item.ItemType.getItemTypeByClass(itemClass));
 		else if (itemClass.equals(Item.class))
 			return (Collection<T>)getItems();
-		else
-			return null;
+		return null;
 	}
 
 	/**

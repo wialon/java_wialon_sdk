@@ -10,6 +10,7 @@ import com.wialon.remote.handlers.ResponseHandler;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class Unit extends ItemIcon {
 	private String uid;
@@ -536,7 +537,15 @@ public class Unit extends ItemIcon {
 				Map<String, Object> oldParams = getMessageParams();
 				if (oldParams==null)
 					oldParams = new HashMap<String, Object>();
-				oldParams.putAll(dataParams);
+				for (Map.Entry<String, Object> entry : dataParams.entrySet()){
+					if (entry.getValue() instanceof Number){
+						Object oldParam=oldParams.get(entry.getKey());
+						if (oldParam!=null && oldParam instanceof Map)
+							((Map) oldParam).put("at", ((Number) entry.getValue()).longValue());
+					} else {
+						oldParams.put(entry.getKey(), entry.getValue());
+					}
+				}
 				setMessageParams(oldParams);
 			} else
 				return false;
