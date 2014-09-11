@@ -1,9 +1,15 @@
 package com.wialon.item;
 
+import android.util.Log;
+
 import com.google.gson.JsonElement;
 import com.wialon.core.Session;
 import com.wialon.remote.handlers.BinaryResponseHandler;
 import com.wialon.remote.RemoteHttpClient;
+import com.wialon.remote.handlers.ResponseHandler;
+
+import java.io.File;
+import java.io.InputStream;
 
 /**
  * Contain functionality for item image manipulation and retrieval.
@@ -45,20 +51,13 @@ public class ItemIcon extends Item {
 			return true;
 		}
 	}
-//Todo
-//	/**
-//	 * Update icon
-//	 * @param fileElement {Object} DOM FileUpload element
-//	 * @param callback {?Function} function to call with result of upload call: callback(code). code is zero if no errors.
-//	 * @return {Boolean} upload initialization state
-//	 */
-//	public void updateIcon(fileElement, callback) {
-//		if (typeof fileElement == "string")
-//		return wialon.core.Uploader.getInstance().uploadFiles([], "unit/upload_image", {fileUrl: fileElement, itemId: this.getId()}, callback, true);
-//		else if (typeof fileElement == "number")
-//		return wialon.core.Remote.getInstance().remoteCall("unit/update_image", {itemId: this.getId(), oldItemId: fileElement}, callback);
-//		return wialon.core.Uploader.getInstance().uploadFiles([fileElement], "unit/upload_image", {itemId: this.getId()}, callback, true);
-//	}
+
+
+    public void updateIcon(File file, ResponseHandler callback) {
+        RemoteHttpClient.getInstance().post("unit/upload_image", file, "{\"itemId\":" + getId() + "}", callback);
+    }
+
+
 	/** Events */
 	public static enum events {
 		/** icon property has changed */

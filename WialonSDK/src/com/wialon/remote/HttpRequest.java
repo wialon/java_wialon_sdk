@@ -5,6 +5,7 @@ import com.wialon.core.Session;
 import com.wialon.remote.handlers.BinaryResponseHandler;
 import com.wialon.remote.handlers.ResponseHandler;
 import com.wialon.util.Debug;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
