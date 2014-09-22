@@ -128,25 +128,18 @@ public class RemoteHttpClient {
 	/**
 	 * Finish batch - perform all delayed calls in one AJAX request
 	 * @param callback function to call with result of AJAX call: callback(code, combinedCode). code is zero if no errors. combinedCode is zero if all combined requests where successfully.
+	 * @return {Boolean} if batch send to the server
 	 */
-	public void finishBatch(ResponseHandler callback) {
+	public boolean finishBatch(ResponseHandler callback) {
 		if (batchCalls==null) {
 			callback.onFailure(2, null);
-			return;
+			return false;
 		}
-//		// store finish batch callbacks
-//		this.__finishBatchCalls.push(callback);
-//		if (this.__batchCallsOwner && owner != this.__batchCallsOwner) {
-//			this.__finishBatchCalls.push(callback);
-//			return;
-//		}
-//		callback = wialon.util.Helper.wrapCallback(this.__finishBatchCalls);
 		if (batchCalls.size()==0) {
 			// nothing to call
-//			this.__finishBatchCalls = [];
 			batchCalls = null;
 			callback.onFailure(0, null);
-			return;
+			return false;
 		}
 		// construct batch call json and select max timeout
 		String params = "[";
@@ -168,6 +161,7 @@ public class RemoteHttpClient {
 				onBatchCallCompleted(getCallback(), callbacks, response);
 			}
 		});
+		return true;
 	}
 
 	/**

@@ -21,6 +21,8 @@ public abstract class Item extends EventProvider {
 	//Billing
 	private Long crt;
 	private Long bact;
+
+	private Integer mu;
 	//Custom properties
 	private Map<String, String> prp;
 	private Map<String, IUpdateItemProperty> updateItemPropertyFunctions;
@@ -57,6 +59,13 @@ public abstract class Item extends EventProvider {
 	 */
 	public String getName() {
 		return nm;
+	}
+	/**
+	 * Get item measure units
+	 * @return Item name
+	 */
+	public Integer getMeasureUnits() {
+		return mu;
 	}
 	/**
 	 * Get item id
@@ -140,6 +149,14 @@ public abstract class Item extends EventProvider {
 		}
 	}
 
+	private void setMeasureUnits(Integer measureUnits) {
+		if (this.mu==null || !this.mu.equals(measureUnits)){
+			Integer oldMeasureUnits=this.mu==null ? null : new Integer(measureUnits);
+			mu = measureUnits;
+			fireEvent(events.changeMeasureUnits, oldMeasureUnits, measureUnits);
+		}
+	}
+
 	private void setUserAccess(Long userAccessLevel) {
 		if (this.uacl==null || !this.uacl.equals(userAccessLevel)) {
 			Long oldAcl=this.uacl==null ? null : new Long(uacl);
@@ -192,6 +209,18 @@ public abstract class Item extends EventProvider {
 						onUpdateCustomProperty(response, getCallback());
 					}
 				});
+	}
+	/**
+	 * Update measure units used in item
+	 * @param type {Number} units of measure type, see wialon.item.measureUnitsType for possible types
+	 * @param flags {Number} set or convert all item settings, see wialon.item.measureUnitsFlag for possible flags
+	 * @param callback {Function?null} callback that will receive information about convertation: callback(code), zero code is success
+	 */
+	public void updateMeasureUnits(int type, int flags, ResponseHandler callback) {
+		RemoteHttpClient.getInstance().remoteCall(
+				"item/update_measure_units",
+				"{\"itemId\":"+getId()+",\"type\":"+type+",\"flags\":"+flags+"}",
+				getOnUpdatePropertiesCallback(callback));
 	}
 	/**
 	 * Update item name, require ACL bit Item.accessFlag.editName over item
@@ -266,12 +295,14 @@ public abstract class Item extends EventProvider {
 		} else if (key.equals("prp") && data.isJsonObject()) {
 			setCustomProperties(Session.getInstance().getGson().fromJson(data, Map.class));
 		} else if (key.equals("prpu") && data.isJsonObject()) {
-			for (Map.Entry entry : ((JsonObject)data).entrySet())
-				setCustomProperty(entry.getKey().toString(), entry.getValue().toString());
+			for (Map.Entry<String, JsonElement> entry : ((JsonObject)data).entrySet())
+				setCustomProperty(entry.getKey(), entry.getValue().getAsString());
 		} else if (key.equals("crt") && data.getAsNumber()!=null) {
 			setCreatorId(data.getAsNumber().longValue());
 		} else if (key.equals("bact") && data.getAsNumber()!=null) {
 			setAccountId(data.getAsNumber().longValue());
+		} else if (key.equals("mu") && data.getAsNumber()!=null){
+			setMeasureUnits(data.getAsNumber().intValue());
 		} else if (updateItemPropertyFunctions!=null && updateItemPropertyFunctions.containsKey(key)) {
 			updateItemPropertyFunctions.get(key).updateItemProperty(data);
 		} else {
@@ -427,6 +458,44 @@ public abstract class Item extends EventProvider {
 		 * */
 		itemDeleted,
 		/** messages registry */
-		messageRegistered
+		messageRegistered,
+		/** item measure units has changed*/
+		changeMeasureUnits
+	}
+
+	/** Measure units flags constants */
+	public static enum measureUnitsFlag{
+		/** Change measure of units type */
+		setMeasureUnits(0x00),
+		/** Convert measure of units type */
+		convertMeasureUnits(0x01);
+
+		private int value;
+
+		private measureUnitsFlag (int value) {
+			this.value=value;
+		}
+
+		public int getValue() {
+			return value;
+		}
+	}
+
+	/** Measure units types constants */
+	public static enum measureUnitsType {
+		/** System SI - km, lt, etc. */
+		si(0x00),
+		/** United States - mi, gal, etc */
+		us(0x01);
+
+		private int value;
+
+		private measureUnitsType (int value) {
+			this.value=value;
+		}
+
+		public long getValue() {
+			return value;
+		}
 	}
 }

@@ -88,21 +88,20 @@ public class User extends Item {
 	public void getLocale(ResponseHandler callback) {
 		RemoteHttpClient.getInstance().remoteCall(
 				"user/get_locale",
-				"{\"userId\":"+this.getId()+"}",
+				"{\"userId\":"+getId()+"}",
 				callback
 		);
 	}
-//	/** Update this user localization settings
-//	 * @param locale {Object} localization parameters, format: {fd: text, wd: ubyte}
-//	 * @param callback {Function?null} callback that will receive information about localization update: callback(code), zero code is success
-//	 */
-//	public void updateLocale(String locale, callback) {
-//		return wialon.core.Remote.getInstance().remoteCall(
-//				"user/update_locale",
-//				{userId: this.getId(), locale: locale},
-//		wialon.util.Helper.wrapCallback(callback)
-//		);
-//	}
+	/** Update this user localization settings
+	 * @param locale localization parameters, format: {fd: text, wd: ubyte}
+	 * @param callback callback that will receive information about localization update
+	 */
+	public void updateLocale(String locale, ResponseHandler callback) {
+		RemoteHttpClient.getInstance().remoteCall(
+				"user/update_locale",
+				"{\"userId\":" + getId() + ",\"locale\":\"" + locale + "\"}",
+				callback);
+	}
 
 	/**
 	 * Update password require ACL bit User.accessFlag.operateAs over user and correct oldPassword OR
