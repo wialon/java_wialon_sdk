@@ -1,7 +1,5 @@
 package com.wialon.item;
 
-import android.util.Log;
-
 import com.google.gson.JsonElement;
 import com.wialon.core.Session;
 import com.wialon.remote.handlers.BinaryResponseHandler;

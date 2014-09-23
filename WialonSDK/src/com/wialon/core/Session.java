@@ -317,26 +317,6 @@ public class Session extends EventProvider {
 	}
 
 	/**
-	 * Get base URL for GIS service
-	 * @param gisType type of GIS function: render, search, geocode
-	 * @return base URL suitable for prepending GIS requests of given type
-	 */
-	public String getBaseGisUrl(String gisType) {
-		if (!this.baseUrl.equals("")) {
-			// extract DNS of Wialon server from base URL (e.g. http://kit-api.wialon.com)
-			String[] arr = this.baseUrl.split("//");
-			if (arr.length >= 2) {
-				if (gisType.equals("render"))
-					return "http://render.mapsviewer.com/" + arr[1];
-				else if (gisType.equals("search"))
-					return "http://search.mapsviewer.com/" + arr[1];
-				else if (gisType.equals("geocode"))
-					return "http://geocode.mapsviewer.com/" + arr[1];
-			}
-		}
-		return this.baseUrl;
-	}
-	/**
 	 * Get latest known server time
 	 * @return {long} Last known server time in UNIX seconds
 	 */
@@ -594,27 +574,34 @@ public class Session extends EventProvider {
 				callback
 		);
 	}
-//Todo
-//	/**
-//	 * Get base URL for GIS service
-//	 * @param gisType {String} type of GIS function: render, search, geocode
-//	 * @return {String} base URL suitable for prepending GIS requests of given type
-//	 */
-//	getBaseGisUrl: function(gisType) {
-//		if (!this.__internalGis && this.__baseUrl != "") {
-//			// extract DNS of Wialon server from base URL (e.g. remote://kit-api.wialon.com)
-//			var arr = this.__baseUrl.split("//");
-//			if (arr.length >= 2) {
-//				if (gisType == "render")
-//					return "remote://render.mapsviewer.com/" + arr[1];
-//				else if (gisType == "search")
-//					return "remote://search.mapsviewer.com/" + arr[1];
-//				else if (gisType == "geocode")
-//					return "remote://geocode.mapsviewer.com/" + arr[1];
-//			}
-//		}
-//		return this.__baseUrl;
-//	}
+
+	/**
+	 * Gis type constants for @getBaseGisUrl call
+	 */
+	public enum GisType{
+		RENDER, SEARCH, GEOCODE
+	}
+
+	/**
+	 * Get base URL for GIS service
+	 * @param gisType {GisType} type of GIS function: render, search, geocode
+	 * @return {String} base URL suitable for prepending GIS requests of given type
+	 */
+	public String getBaseGisUrl(GisType gisType) {
+		if (!baseUrl.equals("")) {
+			// extract DNS of Wialon server from base URL (e.g. remote://kit-api.wialon.com)
+			String[] arr = baseUrl.split("//");
+			if (arr.length >= 2) {
+				if (gisType.equals(GisType.RENDER))
+					return "http://render.mapsviewer.com/" + arr[1];
+				else if (gisType.equals(GisType.SEARCH))
+					return "http://search.mapsviewer.com/" + arr[1];
+				else if (gisType.equals(GisType.GEOCODE))
+					return "http://geocode.mapsviewer.com/" + arr[1];
+			}
+		}
+		return baseUrl;
+	}
 
 	private ResponseHandler getOnSearchItemResultCallback(ResponseHandler callback) {
 		return new ResponseHandler(callback) {
