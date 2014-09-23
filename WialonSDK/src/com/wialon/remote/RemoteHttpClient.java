@@ -246,7 +246,7 @@ public class RemoteHttpClient {
             HttpPost httpPost = new HttpPost(url);
             MultipartEntity multipartEntity = new MultipartEntity();
             multipartEntity.addPart(nameValuePair.getName(), new StringBody(nameValuePair.getValue()));
-            multipartEntity.addPart("icon_file", new FileBody(file, "image/jpeg"));
+            multipartEntity.addPart("icon_file", new FileBody(file, "image/png"));
             httpPost.setEntity(multipartEntity);
          /*   defaultHttpClient = getNewHttpClient();*/
             sendRequest(defaultHttpClient, httpPost, callback);
