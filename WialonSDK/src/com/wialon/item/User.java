@@ -99,7 +99,7 @@ public class User extends Item {
 	public void updateLocale(String locale, ResponseHandler callback) {
 		RemoteHttpClient.getInstance().remoteCall(
 				"user/update_locale",
-				"{\"userId\":" + getId() + ",\"locale\":\"" + locale + "\"}",
+				"{\"userId\":" + getId() + ",\"locale\":" + locale + "}",
 				callback);
 	}
 
