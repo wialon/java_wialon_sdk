@@ -29,22 +29,34 @@ import java.util.logging.Level;
  */
 public class Session extends EventProvider {
 	private static final Session instance = new Session();
+	/** base URL for Wialon server*/
 	private String baseUrl;
+	/** Session ID */
 	private String sessionId;
+	/** Initialization state */
 	private boolean initialized=false;
 	private RemoteHttpClient httpClient;
+	/** Current user */
 	private User currUser;
 	private JsonParser jsonParser;
+	/** Latest known server time */
 	private long serverTime;
 	private Gson gson;
+	/** Server Poll interval, in seconds */
 	private long evtPollInterval;
 	private ScheduledExecutorService scheduler;
 	private ScheduledFuture<?> poolEventHandle;
 	private PoolEvents poolEvents;
+	/** Items by Id */
 	private Map<Long, Item> itemsById;
+	/** Items by Type */
 	private Map<Item.ItemType, List<Item>> itemsByType;
+	/** Classes, binding of integers to real text names */
 	private Map<Integer, Item.ItemType> classes;
+	/** renderer object*/
 	private Renderer renderer;
+	/** Features (billing services) available to logged user, property is lively updated */
+	private JsonObject features;
 	/** messages loader object*/
 	private MessagesLoader messagesLoader;
 
@@ -383,6 +395,36 @@ public class Session extends EventProvider {
 	}
 
 	/**
+	 * Fetch available billing services for given session
+	 * @return features information
+	 */
+	public JsonObject getFeatures() {
+		return features;
+	}
+
+	/**
+	 * Check if billing service is available for given session
+	 * @return {Integer} 0 - N/A, -1 - available, but no more services of given type, 1 - available and more services can be requested
+	 */
+	public int checkFeature(String feature) {
+		JsonObject svcs=features.get("svcs").getAsJsonObject();
+		if (features==null || svcs==null)
+			return 0;
+		if (!svcs.has(feature)) {
+			// check billing plan for unlimited services
+			if (features.has("unlim") && features.get("unlim").getAsInt() == 1)
+				return 1;
+			return 0;
+		}
+		int featureVal = svcs.get(feature).getAsInt();
+		if (featureVal == 1)
+			return 1;
+		else if (featureVal == 0)
+			return -1;
+		return 0;
+	}
+
+	/**
 	 * Create new unit
 	 * @param creator user-creator, either current user nor one of its descendants
 	 * @param name unit name
@@ -630,6 +672,7 @@ public class Session extends EventProvider {
 		classes=null;
 		renderer=null;
 		messagesLoader=null;
+		features = null;
 	}
 
 	private void onLoginResult (String result, ResponseHandler callback) {
@@ -659,6 +702,8 @@ public class Session extends EventProvider {
 					e.printStackTrace();
 				}
 			}
+			if (sessionObject.has("features") && sessionObject.get("features").isJsonObject())
+				features=sessionObject.get("features").getAsJsonObject();
 			sessionId=sessionObject.get("eid").getAsString();
 			serverTime=sessionObject.get("tm").getAsLong();
 			currUser=(User)constructItem(sessionObject.get("user").getAsJsonObject(), User.defaultDataFlags());//gson.fromJson(sessionObject.get("user").getAsJsonObject(), User.class);
@@ -907,6 +952,14 @@ public class Session extends EventProvider {
 					} else if (id==-1) {
 						// file upload result
 						fireEvent(Session.events.fileUploaded, null, evtData.get("d"));
+					} else if (id == -2) {
+						// session terminated on server
+						cleanupSession();
+						fireEvent(Session.events.invalidSession, null, evtData.get("d"));
+					} else if (id == -3) {
+						// changed billing features available for current user
+						features = evtData.get("d").getAsJsonObject();
+						fireEvent(Session.events.featuresUpdated, null, features);
 					}
 				}
 			}
@@ -945,6 +998,8 @@ public class Session extends EventProvider {
 		 * {@code oldData - null}<br/>
 		 * {@code newData - } {@see JsonObject} {@code eventData}
 		 * */
-		fileUploaded
+		fileUploaded,
+		/** Billing features avaible for current user has been changed*/
+		featuresUpdated
 	}
 }
