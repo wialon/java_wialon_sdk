@@ -27,6 +27,7 @@ public class Unit extends ItemIcon {
 	private Long cnkb;
 	private Map<String, Object> prms;
 	public Map<String, String> flds;
+	private String address;
 
 	public Unit () {
 		itemType=ItemType.avl_unit;
@@ -261,6 +262,16 @@ public class Unit extends ItemIcon {
 	 */
 	public UnitData getLastMessage() {
 		return lmsg;
+	}
+
+	/*Get address*/
+	public String getAddress() {
+		return address;
+	}
+
+	/*Set address*/
+	public void setAddress(String address) {
+		this.address = address;
 	}
 
 	/**
