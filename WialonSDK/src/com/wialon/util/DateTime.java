@@ -9,7 +9,7 @@ public class DateTime {
 	/**
 	 * Get current user timezone
 	 *
-	 * @return {Integer} timezone and dst value
+	 * @return timezone and dst value
 	 */
 	public static int getTimezone() {
 		int tz = TimeZone.getDefault().getRawOffset()/1000;
@@ -26,10 +26,6 @@ public class DateTime {
 	 */
 	public static int getTimezoneOffset() {
 		int tz = getTimezone();
-		// old format
-//		if ((tz & this.__dstFlags.TZ_TYPE_MASK) != this.__dstFlags.TZ_TYPE_WITH_DST)
-//			return tz & this.__dstFlags.TZ_OFFSET_MASK;
-		// new DST format
 		return ((tz & 0x80000000) != 0 ? ((tz & 0xFFFF) | 0xFFFF0000) : (tz & 0xFFFF));
 	}
 

@@ -27,13 +27,13 @@ public abstract class ItemProperties {
 		this.ajaxPath=ajaxPath;
 		this.event=event;
 		this.item=item;
-		item.registerItemPropertyHandler(propName, new Item.IUpdateItemProperty() {
+		item.registerItemPropertyHandler(propName, new Item.UpdateItemProperty() {
 			@Override
 			public void updateItemProperty(JsonElement propData) {
 				setData((Map<String, String>)Session.getInstance().getGson().fromJson(propData, new TypeToken<Map<String, String>>(){}.getType()));
 			}
 		});
-		item.registerItemPropertyHandler(propName+"u", new Item.IUpdateItemProperty() {
+		item.registerItemPropertyHandler(propName+"u", new Item.UpdateItemProperty() {
 			@Override
 			public void updateItemProperty(JsonElement data) {
 				modifyProperties(data.toString(), null, false);
@@ -77,7 +77,7 @@ public abstract class ItemProperties {
 					data.remove(id);
 				// fire property update event
 				if (!skipFlag && !String.valueOf(newData).equals(String.valueOf(oldData)))
-					item.fireEvent(event, oldData, newData);
+					item.fireItemPropertyEvent(event, oldData, newData);
 				if (callback!=null)
 					callback.onSuccess(result);
 				return;

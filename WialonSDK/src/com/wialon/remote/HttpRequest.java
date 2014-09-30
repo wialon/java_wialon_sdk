@@ -4,7 +4,6 @@ import com.google.gson.JsonParser;
 import com.wialon.core.Session;
 import com.wialon.remote.handlers.BinaryResponseHandler;
 import com.wialon.remote.handlers.ResponseHandler;
-import com.wialon.util.Debug;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -31,7 +30,6 @@ public class HttpRequest implements Runnable {
 	@Override
 	public void run() {
 		try {
-			Debug.log.info("Start sending request");
 			HttpResponse httpResponse=client.execute(request);
 			StatusLine status = httpResponse.getStatusLine();
 			HttpEntity temp = httpResponse.getEntity();

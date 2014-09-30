@@ -49,7 +49,7 @@ public class Unit extends ItemIcon {
 		if (this.uid==null || !this.uid.equals(uniqueId)) {
 			String oldUniqueId=this.uid==null ? null : new String(uid);
 			this.uid = uniqueId;
-			fireEvent(events.changeUniqueId, oldUniqueId, uniqueId);
+			fireEvent(events.changeUniqueId, this, oldUniqueId, uniqueId);
 		}
 	}
 
@@ -69,7 +69,7 @@ public class Unit extends ItemIcon {
 		if (this.hw==null || !this.hw.equals(deviceTypeId)) {
 			Long oldHw=this.hw==null ? null : new Long(this.hw);
 			this.hw = deviceTypeId;
-			fireEvent(events.changeDeviceTypeId, oldHw, hw);
+			fireEvent(events.changeDeviceTypeId, this, oldHw, hw);
 		}
 	}
 
@@ -89,7 +89,7 @@ public class Unit extends ItemIcon {
 		if (this.ph==null || !this.ph.equals(phoneNumber)){
 			String oldPhone=this.ph==null ? null : new String(phoneNumber);
 			this.ph = phoneNumber;
-			fireEvent(events.changePhoneNumber, oldPhone, ph);
+			fireEvent(events.changePhoneNumber, this, oldPhone, ph);
 		}
 	}
 
@@ -109,7 +109,7 @@ public class Unit extends ItemIcon {
 		if (this.ph2==null || !this.ph2.equals(phoneNumber2)){
 			String oldPhone2=this.ph2==null ? null : new String(phoneNumber2);
 			this.ph2 = phoneNumber2;
-			fireEvent(events.changePhoneNumber2, oldPhone2, ph2);
+			fireEvent(events.changePhoneNumber2, this, oldPhone2, ph2);
 		}
 
 	}
@@ -130,7 +130,7 @@ public class Unit extends ItemIcon {
 		if (this.psw==null || !this.psw.equals(accessPassword)) {
 			String oldPassword=this.psw==null ? null : new String(psw);
 			this.psw = accessPassword;
-			fireEvent(events.changeAccessPassword, oldPassword, psw);
+			fireEvent(events.changeAccessPassword, this, oldPassword, psw);
 		}
 	}
 
@@ -148,7 +148,7 @@ public class Unit extends ItemIcon {
 	 */
 	private void setCommands(List commands) {
 		this.cmds = commands;
-		fireEvent(events.changeCommands, null, commands);
+		fireEvent(events.changeCommands, this, null, commands);
 	}
 
 	/**
@@ -167,7 +167,7 @@ public class Unit extends ItemIcon {
 		if (this.cfl==null || !this.cfl.equals(calcFlags)) {
 			Long oldFlags=this.cfl==null ? null : new Long(cfl);
 			this.cfl = calcFlags;
-			fireEvent(events.changeCalcFlags, oldFlags, cfl);
+			fireEvent(events.changeCalcFlags, this, oldFlags, cfl);
 		}
 	}
 
@@ -187,7 +187,7 @@ public class Unit extends ItemIcon {
 		if (this.cnm==null || !this.cnm.equals(mileageCounter)) {
 			Long oldMileage=this.cnm==null ? null : new Long(cnm);
 			this.cnm = mileageCounter;
-			fireEvent(events.changeMileageCounter, oldMileage, cnm);
+			fireEvent(events.changeMileageCounter, this, oldMileage, cnm);
 		}
 	}
 
@@ -207,7 +207,7 @@ public class Unit extends ItemIcon {
 		if (this.cneh==null || !this.cneh.equals(engineHoursCounter)) {
 			Long oldEngine=this.cneh==null ? null : new Long(cneh);
 			this.cneh = engineHoursCounter;
-			fireEvent(events.changeEngineHoursCounter, oldEngine, cneh);
+			fireEvent(events.changeEngineHoursCounter, this, oldEngine, cneh);
 		}
 	}
 
@@ -227,7 +227,7 @@ public class Unit extends ItemIcon {
 		if (cnkb==null || !cnkb.equals(trafficCounter)) {
 			Long oldTraffic= cnkb==null ? null : new Long(cnkb);
 			this.cnkb = trafficCounter;
-			fireEvent(events.changeTrafficCounter, oldTraffic, cnkb);
+			fireEvent(events.changeTrafficCounter, this, oldTraffic, cnkb);
 		}
 	}
 
@@ -245,7 +245,7 @@ public class Unit extends ItemIcon {
 	 */
 	private void setMessageParams(Map<String, Object> messageParams) {
 		this.prms = messageParams;
-		fireEvent(events.changeMessageParams, null, messageParams);
+		fireEvent(events.changeMessageParams, this, null, messageParams);
 	}
 
 	/**
@@ -399,18 +399,7 @@ public class Unit extends ItemIcon {
 					setLastMessage((UnitData) message);
 				else {
 					setLastMessage((UnitData)message);
-					/*Todo
-					// create copy of new message and add all properties that exists in previous message and not overrided in new one
-					var newMsg = qx.lang.Object.clone(msg);
-					if (msg.p)
-						newMsg.p = qx.lang.Object.clone(msg.p);
-					qx.lang.Object.carefullyMergeWith(newMsg, currLastMsg);
-					if (currLastMsg.p)
-						qx.lang.Object.carefullyMergeWith(newMsg.p, currLastMsg.p);
-					if (!newMsg.pos)
-						newMsg.pos = currLastMsg.pos;
-					this.setLastMessage(newMsg);
-					*/
+					//Todo: create copy of new message and add all properties that exists in previous message and not overridden in new one
 				}
 			}
 			// check position
@@ -427,90 +416,15 @@ public class Unit extends ItemIcon {
 		// call base implementation
 		super.handleMessage(message);
 	}
-//Todo
-//	/**
-//	 * Get image url in JPEG format of photo attched to message (message should have image parameter)
-//	 * @param msgIndex {Integer} message index
-//	 * @param time {Integer} message time
-//	 * @param nocache {Number} nocache flag
-//	 * @return {String} URL of photo (JPEG)
-//	 */
-//	getMessageImageUrl: function(time, msgIndex, nocache) {
-//		if (!nocache)
-//			nocache = "";
-//		return wialon.core.Session.getInstance().getBaseUrl() + "/adfurl" + nocache + "/avl_msg_photo.jpeg?sid=" + wialon.core.Session.getInstance().getId() +
-//				"&time=" + time + "&unitIndex=" + this.getId() + "&msgIndex=" + msgIndex;
-//	},
-//	/**
-//	 * Download binary device hardware parameter as file (public property)
-//	 * @param hwId {Integer} Id of device hardware type
-//	 * @param fileId {Integer} Id of binary hardware parameter (public property)
-//	 * @param callback {?Function} callback that get result of command scheduling in form callback(code)
-//	 */
-//	downloadHwParamFile: function(hwId, fileId, callback) {
-//		return wialon.core.Session.getInstance().getBaseUrl() + "/wialon/ajax.html?sid=" + wialon.core.Session.getInstance().getId() +
-//				"&svc=unit/update_hw_params&params=" + qx.lang.Json.stringify({itemId: this.getId(), hwId: hwId, fileId: fileId, action: "download_file"});
-//	},
-//	/**
-//	 * Import device hardware parameters (public properties of various types: bool, int, string, binary ...)
-//	 * @param hwId {Integer} Id of device hardware type
-//	 * @param params {Object} JSON object with keys:
-//	 * 	full_data {Integer} 0 - uploade files, 1 - set file data as hex string,
-//	 * 	reset_all {Integer} Initialize all hw properties with default values (0|1),
-//	 * 	params {Array} array containing objects with following keys:
-//	 * 		name {String} property name,
-//	 * 		type {String} property type (bool, int, text, password, file, long, double),
-//	 * 		value {String} property value,
-//	 * 		reset {String} reset property to default value,
-//	 * 		set_psw {Integer} for password properties: change password or not (1|0)
-//	 * @param file_inputs {String} file inputs for file upload (optional)
-//	 * @param callback {?Function} callback that get result of command scheduling in form callback(code)
-//	 */
-//	updateHwParams: function(hwId, params, file_inputs, callback) {
-//		if (file_inputs && file_inputs.length && (typeof params.full_data != "undefined" && !params.full_data))
-//		wialon.core.Uploader.getInstance().uploadFiles(file_inputs, "unit/update_hw_params", {itemId: this.getId(), hwId: hwId, params_data: params, action: "set"}, wialon.util.Helper.wrapCallback(callback), true, 30000);
-//		else
-//		wialon.core.Remote.getInstance().remoteCall(
-//				"unit/update_hw_params", {itemId: this.getId(), hwId: hwId, params_data: params, action: "set"},
-//		wialon.util.Helper.wrapCallback(callback)
-//		);
-//	}
-//	/**
-//	 * Check if hardware configuration parameters exist.
-//	 * @param hwId {Number} hardware ID
-//	 * @param callback {?Function} callback that will receive information about checkHwConfig: callback(code), zero code is success
-//	 */
-//	checkHwConfig: function(hwId, callback) {
-//		wialon.core.Remote.getInstance().remoteCall(
-//				"unit/update_hw_params", {hwId: hwId, action: "check_config"},
-//		wialon.util.Helper.wrapCallback(callback)
-//		);
-//	},
-//	/**
-//	 * Get device hardware parameters (public properties of various types: bool, int, string, binary ...)
-//	 * @param unitId {Number} unit ID (may be 0 when unit not exists)
-//	 * @param hwId {Integer} Id of device hardware type
-//	 * @param full {Integer} Set 1 to get full JSON (including binary file data)
-//	 * @param callback {?Function} callback that get result of command scheduling in form callback(code)
-//	 */
-//	getHwParams: function(unitId, hwId, full, callback) {
-//		wialon.core.Remote.getInstance().remoteCall(
-//				"unit/update_hw_params", {itemId: unitId, hwId: hwId, fullData: full ? 1 : 0, action: "get"},
-//		wialon.util.Helper.wrapCallback(callback)
-//		);
-//	}
-//}
 
 	private void setLastMessage(UnitData message) {
-		//Log.d("Updating last message", "Updating last message"+(lmsg.getTime()<message.getTime()));
 		this.lmsg=message;
-		fireEvent(events.changeLastMessage, null, message);
+		fireEvent(events.changeLastMessage, this, null, message);
 	}
 
 	private void setPosition(UnitData.Position position) {
-		//Log.d("Updating position message", "Updating position message"+(pos.getTime()<position.getTime()));
 		this.pos=position;
-		fireEvent(events.changePosition, null, position);
+		fireEvent(events.changePosition, this, null, position);
 	}
 
 	@Override

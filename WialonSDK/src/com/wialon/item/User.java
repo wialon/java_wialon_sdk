@@ -136,7 +136,7 @@ public class User extends Item {
 		if (this.fl==null || !this.fl.equals(userFlags)) {
 			Long oldFlags=this.fl==null ? null : new Long(this.fl);
 			this.fl = userFlags;
-			fireEvent(events.changeUserFlags, oldFlags, userFlags);
+			fireEvent(events.changeUserFlags, this, oldFlags, userFlags);
 		}
 	}
 
@@ -144,7 +144,7 @@ public class User extends Item {
 		if (this.hm==null || !this.hm.equals(hostsMask)) {
 			String oldMask=this.hm==null ? null :new String(hostsMask);
 			this.hm = hostsMask;
-			fireEvent(events.changeHostsMask, oldMask, hostsMask);
+			fireEvent(events.changeHostsMask, this, oldMask, hostsMask);
 		}
 	}
 

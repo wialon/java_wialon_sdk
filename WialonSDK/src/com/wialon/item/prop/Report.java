@@ -83,17 +83,7 @@ public class Report extends ItemPropertiesData {
 			return;
 		}
 		callback.onSuccess(result);
-//		var reportResult = null;
-//		if (code == 0 && result) {
-//			// success
-//			reportResult = new wialon.report.ReportResult(result);
-//			var renderer = wialon.core.Session.getInstance().getRenderer();
-//			// update renderer
-//			if (renderer)
-//				renderer.setReportResult(reportResult);
-//		}
-//		// pass code to callback if available
-//		callback(code, reportResult);
+		//TODO: update session render
 	}
 
 	/**
@@ -105,7 +95,7 @@ public class Report extends ItemPropertiesData {
 		Renderer renderer = Session.getInstance().getRenderer();
 		// update renderer
 		if (renderer != null)
-			renderer.hashCode();//renderer.setReportResult(null);
+			renderer.hashCode();//TODO: update session render
 		// pass code to callback if available
 		callback.onSuccess(result);
 	}

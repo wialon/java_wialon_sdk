@@ -6,7 +6,7 @@ import com.wialon.item.prop.Report;
 import java.util.Map;
 
 public class Resource extends Item {
-//Todo fields and methods
+
 	public Resource() {
 		itemType=ItemType.avl_resource;
 	}

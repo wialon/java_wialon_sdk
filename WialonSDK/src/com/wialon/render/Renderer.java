@@ -210,7 +210,7 @@ public class Renderer extends EventProvider {
 				callback);
 	}
 	private void upVersion(){
-		fireEvent(events.changeVersion, this.version, ++this.version);
+		fireEvent(events.changeVersion, this, this.version, ++this.version);
 	}
 	/**
 	 * Handle result of new messages layer creation

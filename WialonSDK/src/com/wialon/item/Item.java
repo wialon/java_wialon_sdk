@@ -17,7 +17,6 @@ public abstract class Item extends EventProvider {
 	private Long id;
 	private Long uacl;
 	private Long dataFlags;
-	//private int cls;
 	//Billing
 	private Long crt;
 	private Long bact;
@@ -25,12 +24,12 @@ public abstract class Item extends EventProvider {
 	private Integer mu;
 	//Custom properties
 	private Map<String, String> prp;
-	private Map<String, IUpdateItemProperty> updateItemPropertyFunctions;
+	private Map<String, UpdateItemProperty> updateItemPropertyFunctions;
 
 	protected ItemType itemType;
 	//Todo custom & admin fields
 
-	public interface IUpdateItemProperty{
+	public interface UpdateItemProperty {
 		public void updateItemProperty(JsonElement data);
 	}
 
@@ -39,9 +38,9 @@ public abstract class Item extends EventProvider {
 	 * @param propName Property name
 	 * @param function function
 	 */
-	public void registerItemPropertyHandler(String propName, IUpdateItemProperty function){
+	public void registerItemPropertyHandler(String propName, UpdateItemProperty function){
 		if (updateItemPropertyFunctions==null)
-			updateItemPropertyFunctions=new HashMap<String, IUpdateItemProperty>();
+			updateItemPropertyFunctions=new HashMap<String, UpdateItemProperty>();
 		if (!updateItemPropertyFunctions.containsKey(propName))
 			updateItemPropertyFunctions.put(propName, function);
 	}
@@ -145,7 +144,7 @@ public abstract class Item extends EventProvider {
 		if (this.nm==null || !this.nm.equals(name)){
 			String oldName=this.nm==null ? null : new String(nm);
 			nm = name;
-			fireEvent(events.changeName, oldName, name);
+			fireEvent(events.changeName, this, oldName, name);
 		}
 	}
 
@@ -153,7 +152,7 @@ public abstract class Item extends EventProvider {
 		if (this.mu==null || !this.mu.equals(measureUnits)){
 			Integer oldMeasureUnits=this.mu==null ? null : new Integer(measureUnits);
 			mu = measureUnits;
-			fireEvent(events.changeMeasureUnits, oldMeasureUnits, measureUnits);
+			fireEvent(events.changeMeasureUnits, this, oldMeasureUnits, measureUnits);
 		}
 	}
 
@@ -161,7 +160,7 @@ public abstract class Item extends EventProvider {
 		if (this.uacl==null || !this.uacl.equals(userAccessLevel)) {
 			Long oldAcl=this.uacl==null ? null : new Long(uacl);
 			this.uacl = userAccessLevel;
-			fireEvent(events.changeUserAccess, oldAcl, userAccessLevel);
+			fireEvent(events.changeUserAccess, this, oldAcl, userAccessLevel);
 		}
 	}
 
@@ -181,7 +180,7 @@ public abstract class Item extends EventProvider {
 		if (this.dataFlags==null || !this.dataFlags.equals(dataFlags)) {
 			Long oldFlags=this.dataFlags==null ? null : new Long(this.dataFlags);
 			this.dataFlags = dataFlags;
-			fireEvent(events.changeDataFlags, oldFlags, dataFlags);
+			fireEvent(events.changeDataFlags, this, oldFlags, dataFlags);
 		}
 	}
 
@@ -190,7 +189,7 @@ public abstract class Item extends EventProvider {
 	 * @param message Message data
 	 */
 	public void handleMessage(Message message) {
-		fireEvent(events.messageRegistered, null, message);
+		fireEvent(events.messageRegistered, this, null, message);
 	}
 
 	/**
@@ -276,6 +275,11 @@ public abstract class Item extends EventProvider {
 			return;
 		}
 		callback.onFailure(6, null);
+	}
+
+	//Should to be public for item properties implementation with delegation
+	public void fireItemPropertyEvent(Enum event, Object oldData, Object newData) {
+		fireEvent(event, this, oldData, newData);
 	}
 
 	protected ResponseHandler getOnUpdatePropertiesCallback(ResponseHandler callback) {

@@ -19,7 +19,7 @@ public class ItemIcon extends Item {
 		if (this.ugi==null || !this.ugi.equals(ugi)) {
 			Integer oldUgi=this.ugi==null ? null : new Integer(this.ugi);
 			this.ugi = ugi;
-			fireEvent(events.changeIcon, oldUgi, ugi);
+			fireEvent(events.changeIcon, this, oldUgi, ugi);
 		}
 	}
 	/**

@@ -9,7 +9,6 @@ import com.wialon.item.User;
 import com.wialon.messages.Message;
 import com.wialon.remote.handlers.SearchResponseHandler;
 import com.wialon.render.Renderer;
-import com.wialon.util.Debug;
 import com.google.gson.*;
 import org.apache.http.NameValuePair;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -21,7 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 /**
  * Wialon session static object.
@@ -506,7 +504,6 @@ public class Session extends EventProvider {
 	 * @param itemData - object with data from server
 	 */
 	public void updateItem(Item item, JsonObject itemData) {
-		Debug.log.info("updateItem");
 		for (Map.Entry<String, JsonElement> data : itemData.entrySet()) {
 			item.updateItemData(data.getKey(), data.getValue());
 		}
@@ -712,7 +709,6 @@ public class Session extends EventProvider {
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
-			Debug.log.log(Level.ALL, "Exception on parseSessionData", e);
 			return false;
 		}
 	}
@@ -771,7 +767,6 @@ public class Session extends EventProvider {
 				items[i]=item;
 			} catch (Exception e){
 				e.printStackTrace();
-				Debug.log.info("ERROR");
 			}
 		}
 		if (callback instanceof  SearchResponseHandler)
@@ -820,10 +815,8 @@ public class Session extends EventProvider {
 			} catch (Exception e) {
 				e.printStackTrace();
 				callback.onFailure(6, e);
-				Debug.log.info("ERROR");
 			}
 		}
-		Debug.log.info("END");
 		callback.onSuccess(result);
 	}
 
@@ -871,7 +864,7 @@ public class Session extends EventProvider {
 		if (item==null)
 			return;
 		// remove item from session
-		item.fireEvent(Item.events.itemDeleted, item.getId(), null);
+		item.fireEvent(Item.events.itemDeleted, item, item.getId(), null);
 		removeItem(item);
 	}
 
@@ -896,7 +889,6 @@ public class Session extends EventProvider {
 		RemoteHttpClient.getInstance().post(baseUrl + "/avl_evts", nameValuePairs, httpClient, new ResponseHandler() {
 			@Override
 			public void onSuccess(String response) {
-				Debug.log.info("onSuccessAvlEvents " + response);
 				eventsResponse(response);
 				super.onSuccess(response);
 			}
@@ -904,10 +896,9 @@ public class Session extends EventProvider {
 			@Override
 			public void onFailure(int errorCode, Throwable throwableError) {
 				if (errorCode==1 && throwableError==null){
-					fireEvent(events.invalidSession, null, null);
+					fireEvent(events.invalidSession, null, null, null);
 					cleanupSession();
 				}
-				Debug.log.info("onFailureAvlEvents" + "errorCode" + errorCode);
 				super.onFailure(errorCode, throwableError);
 			}
 		});
@@ -951,22 +942,22 @@ public class Session extends EventProvider {
 							hashCode();//Todo skipped updates
 					} else if (id==-1) {
 						// file upload result
-						fireEvent(Session.events.fileUploaded, null, evtData.get("d"));
+						fireEvent(Session.events.fileUploaded, null, null, evtData.get("d"));
 					} else if (id == -2) {
 						// session terminated on server
 						cleanupSession();
-						fireEvent(Session.events.invalidSession, null, evtData.get("d"));
+						fireEvent(Session.events.invalidSession, null, null, evtData.get("d"));
 					} else if (id == -3) {
 						// changed billing features available for current user
 						features = evtData.get("d").getAsJsonObject();
-						fireEvent(Session.events.featuresUpdated, null, features);
+						fireEvent(Session.events.featuresUpdated, null, null, features);
 					}
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		fireEvent(events.serverUpdated, null, serverTime);
+		fireEvent(events.serverUpdated, null, null, serverTime);
 	}
 
 	private final class PoolEvents implements Runnable {
@@ -999,7 +990,7 @@ public class Session extends EventProvider {
 		 * {@code newData - } {@see JsonObject} {@code eventData}
 		 * */
 		fileUploaded,
-		/** Billing features avaible for current user has been changed*/
+		/** Billing features available for current user has been changed*/
 		featuresUpdated
 	}
 }

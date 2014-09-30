@@ -18,9 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Created by pave on 26.09.14.
- */
 public class Gis {
 
 	/**
@@ -42,8 +39,8 @@ public class Gis {
 	/**
 	 * Calculate flags for geocodingParams based on levels of hierarchy addresses
 	 * f.e.:
-	 * wialon.util.Gis.getLevelFlags(wialon.util.Gis.geocodingFlags.level_houses,
-	 * wialon.util.Gis.geocodingFlags.level_streets, wialon.util.Gis.geocodingFlags.level_cities)
+	 * Gis.getLevelFlags(wialon.util.Gis.geocodingFlags.level_houses,
+	 * Gis.geocodingFlags.level_streets, wialon.util.Gis.geocodingFlags.level_cities)
 	 *
 	 * @param l1 {Integer} - address element for level 1
 	 * @param l2 {Integer} - address element for level 2

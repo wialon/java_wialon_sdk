@@ -21,9 +21,9 @@ public class UnitGroup extends ItemIcon {
 	}
 
 	/**
-	 * Update units in group, require ACL bit wialon.item.Item.accessFlag.editSubItems over group
-	 * @param units {Array} collection of unit identifiers in form [id1, id2, ...] for group
-	 * @param callback {?Function} callback that will receive information about update: callback(code), zero code is success
+	 * Update units in group, require ACL bit Item.accessFlag.editSubItems over group
+	 * @param units collection of unit identifiers in form [id1, id2, ...] for group
+	 * @param callback callback that will receive information about update: callback(code), zero code is success
 	 */
 	public void updateUnits(Long[] units, ResponseHandler callback) {
 		String unitsJson=Session.getInstance().getGson().toJson(units);
@@ -56,7 +56,7 @@ public class UnitGroup extends ItemIcon {
 			return true;
 		else {
 			if (key.equals("u")&& data.getAsJsonArray()!=null) {
-				setUnits((Long[])Session.getInstance().getGson().fromJson(data.toString(), Long[].class));
+				setUnits(Session.getInstance().getGson().fromJson(data.toString(), Long[].class));
 			} else
 				return false;
 			return true;
@@ -67,7 +67,7 @@ public class UnitGroup extends ItemIcon {
 		if (this.u==null || !this.u.equals(units)) {
 			Long[] oldUnits=this.u==null? null : u.clone();
 			this.u = units;
-			fireEvent(events.changeUnits, oldUnits, units);
+			fireEvent(events.changeUnits, this, oldUnits, units);
 		}
 	}
 
