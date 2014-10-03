@@ -1,22 +1,12 @@
 package com.wialon.util;
 
-import android.location.Location;
-import android.util.Log;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.gurtam.gps_trace_orange.utils.UnitUtils;
 import com.wialon.core.Session;
-import com.wialon.item.User;
 import com.wialon.remote.RemoteHttpClient;
 import com.wialon.remote.handlers.ResponseHandler;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
+import java.util.HashMap;
+import java.util.Map;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 
 public class Gis {
 
@@ -66,15 +56,15 @@ public class Gis {
 	/**
 	 * Detect location for text for coordinates using GurtamMaps
 	 *
-	 * @param coords   {String} String of locations in form [{lat: Y, lon: X}]
-	 * @param callback {Function?null} callback function that is called after remote call: callback(code, locations), locations is array of strings same count as source array
+	 * @param coords   String of locations in form [{lat: Y, lon: X}]
+	 * @param callback callback function that is called after remote call: callback(code, locations), locations is array of strings same count as source array
 	 *                 all other parameters passed through in structure geocodingParams
 	 */
 	public static void getLocations(String coords, int levelFlags, ResponseHandler callback) {
-		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
-		nameValuePairs.add(new BasicNameValuePair("coords", coords));
-		nameValuePairs.add(new BasicNameValuePair("flags", String.valueOf(levelFlags)));
-		nameValuePairs.add(new BasicNameValuePair("uid", String.valueOf(Session.getInstance().getCurrUser().getId())));
+		Map<String, String> nameValuePairs = new HashMap<String, String>();
+		nameValuePairs.put("coords", coords);
+		nameValuePairs.put("flags", String.valueOf(levelFlags));
+		nameValuePairs.put("uid", String.valueOf(Session.getInstance().getCurrUser().getId()));
 		RemoteHttpClient.getInstance().get(Session.getInstance().getBaseGisUrl(Session.GisType.GEOCODE) + "/gis_geocode", nameValuePairs, callback);
 	}
 }

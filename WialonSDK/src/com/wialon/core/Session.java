@@ -10,9 +10,6 @@ import com.wialon.messages.Message;
 import com.wialon.remote.handlers.SearchResponseHandler;
 import com.wialon.render.Renderer;
 import com.google.gson.*;
-import org.apache.http.NameValuePair;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -881,12 +878,12 @@ public class Session extends EventProvider {
 		return null;
 	}
 
-	private void poolEvents(DefaultHttpClient httpClient) {
+	private void poolEvents() {
 		if (sessionId==null)
 			return;
-		List<NameValuePair> nameValuePairs = new LinkedList<NameValuePair>();
-		nameValuePairs.add(new BasicNameValuePair("sid", sessionId));
-		RemoteHttpClient.getInstance().post(baseUrl + "/avl_evts", nameValuePairs, httpClient, new ResponseHandler() {
+		Map<String, String> nameValuePairs = new HashMap<String, String>();
+		nameValuePairs.put("sid", sessionId);
+		RemoteHttpClient.getInstance().post(baseUrl + "/avl_evts", nameValuePairs, new ResponseHandler() {
 			@Override
 			public void onSuccess(String response) {
 				eventsResponse(response);
@@ -939,7 +936,8 @@ public class Session extends EventProvider {
 									onItemDeleted(item);
 							}
 						} else
-							hashCode();//Todo skipped updates
+							//TODO: skipped updates
+							hashCode();
 					} else if (id==-1) {
 						// file upload result
 						fireEvent(Session.events.fileUploaded, null, null, evtData.get("d"));
@@ -961,13 +959,10 @@ public class Session extends EventProvider {
 	}
 
 	private final class PoolEvents implements Runnable {
-		private DefaultHttpClient httpClient;
-		public PoolEvents () {
-			httpClient= RemoteHttpClient.getInstance().getNewHttpClient();
-		}
+
 		@Override
 		public void run() {
-			poolEvents(httpClient);
+			poolEvents();
 		}
 	}
 

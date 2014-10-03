@@ -11,9 +11,7 @@ import com.wialon.remote.handlers.ResponseHandler;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Wialon renderer object.
@@ -190,20 +188,20 @@ public class Renderer extends EventProvider {
 	/**
 	 * Perform hit test over coordinates over all layers in renderer
 	 * @param lat  point latitude
-	 * @param lon {Double} point longtitude
-	 * @param scale {Integer} scale in some adsa-known metrics
-	 * @param radius {Double} maximum possible range till object, probably in degrees
-	 * @param layerName {String} maybe zero string (value: "")
-	 * @param callback {?Function} callback, that get result in form callback(code, result), where zero code mean success, result is complex object, which fields depending on type of hitted layer
+	 * @param lon  point longtitude
+	 * @param scale scale in some adsa-known metrics
+	 * @param radius maximum possible range till object, probably in degrees
+	 * @param layerName maybe zero string (value: "")
+	 * @param callback callback, that get result in form callback(code, result), where zero code mean success, result is complex object, which fields depending on type of hitted layer
 	 */
 	public void hitTest(double lat, double lon, int scale, double radius, String layerName, ResponseHandler callback) {
-		List<NameValuePair> nameValuePairs = new LinkedList<NameValuePair>();
-		nameValuePairs.add(new BasicNameValuePair("sid", Session.getInstance().getId()));
-		nameValuePairs.add(new BasicNameValuePair("lat", String.valueOf(lat)));
-		nameValuePairs.add(new BasicNameValuePair("lon", String.valueOf(lon)));
-		nameValuePairs.add(new BasicNameValuePair("scale", String.valueOf(scale)));
-		nameValuePairs.add(new BasicNameValuePair("radius", String.valueOf(radius)));
-		nameValuePairs.add(new BasicNameValuePair("layerName", layerName));
+		Map<String, String> nameValuePairs = new HashMap<String, String>();
+		nameValuePairs.put("sid", Session.getInstance().getId());
+		nameValuePairs.put("lat", String.valueOf(lat));
+		nameValuePairs.put("lon", String.valueOf(lon));
+		nameValuePairs.put("scale", String.valueOf(scale));
+		nameValuePairs.put("radius", String.valueOf(radius));
+		nameValuePairs.put("layerName", layerName);
 		RemoteHttpClient.getInstance().post(
 				Session.getInstance().getBaseUrl() + "/avl_hittest_pos",
 				nameValuePairs,

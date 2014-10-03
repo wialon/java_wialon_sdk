@@ -16,19 +16,21 @@ public class ItemIcon extends Item {
 	private Integer ugi;
 
 	private void setUgi(Integer ugi) {
-		if (this.ugi==null || !this.ugi.equals(ugi)) {
-			Integer oldUgi=this.ugi==null ? null : new Integer(this.ugi);
+		if (this.ugi == null || !this.ugi.equals(ugi)) {
+			Integer oldUgi = this.ugi == null ? null : new Integer(this.ugi);
 			this.ugi = ugi;
 			fireEvent(events.changeIcon, this, oldUgi, ugi);
 		}
 	}
+
 	/**
 	 * Get icon Url
+	 *
 	 * @param borderSize border size in pixels, if not specified - 32
 	 * @return URL to item icon of specified size (PNG)
 	 */
 	public String getIconUrl(int borderSize) {
-		if (borderSize<=0)
+		if (borderSize <= 0)
 			borderSize = 32;
 		return Session.getInstance().getBaseUrl() + "/avl_item_image/" + this.getId() + "/" + borderSize + "/" + ugi + ".png";
 	}
@@ -42,7 +44,7 @@ public class ItemIcon extends Item {
 		if (super.updateItemData(key, data))
 			return true;
 		else {
-			if (key.equals("ugi")&& data.getAsNumber()!=null)
+			if (key.equals("ugi") && data.getAsNumber() != null)
 				setUgi(data.getAsInt());
 			else
 				return false;
@@ -51,14 +53,18 @@ public class ItemIcon extends Item {
 	}
 
 
-    public void updateIcon(File file, ResponseHandler callback) {
-        RemoteHttpClient.getInstance().post("unit/upload_image", file, "{\"itemId\":" + getId() + "}", callback);
-    }
+	public void updateIcon(File file, ResponseHandler callback) {
+		RemoteHttpClient.getInstance().uploadFile(file, "unit/upload_image", "{\"itemId\":" + getId() + "}", callback, 10000);
+	}
 
 
-	/** Events */
+	/**
+	 * Events
+	 */
 	public static enum events {
-		/** icon property has changed */
+		/**
+		 * icon property has changed
+		 */
 		changeIcon
 	}
 }
