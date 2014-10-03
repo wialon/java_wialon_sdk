@@ -1,8 +1,8 @@
 apply plugin: 'java'
 
-archivesBaseName = 'wialon-sdk'
+archivesBaseName = 'wialon-sdk-examples'
 sourceCompatibility = 1.6
-version = '1.2.39'
+version = '1.1.7'
 
 sourceSets {
     main {
@@ -28,7 +28,7 @@ dependencies {
     compile 'org.apache.httpcomponents:httpclient-cache:4.3.5'
     compile 'org.apache.httpcomponents:httpcore:4.2.4'
     compile 'org.apache.httpcomponents:httpmime:4.2.5'
-    compile 'com.squareup.okhttp:okhttp:2.0.0'
-    compile 'com.squareup.okio:okio:1.0.1'
+//    compile 'com.squareup.okhttp:okhttp:2.0.0'
+//    compile 'com.squareup.okio:okio:1.0.1'
     compile fileTree(dir: 'libs', include: ['*.jar'])
 }
