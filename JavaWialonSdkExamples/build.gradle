@@ -1,0 +1,34 @@
+apply plugin: 'java'
+
+archivesBaseName = 'wialon-sdk-examples'
+sourceCompatibility = 1.6
+version = '1.1.7'
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+        resources {
+            srcDir 'resources'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.apache.directory.studio:org.apache.commons.codec:1.6'
+    compile 'commons-logging:commons-logging:1.1.1'
+    compile 'org.apache.httpcomponents:fluent-hc:4.2.5'
+    compile 'com.google.code.gson:gson:2.2.4'
+    compile 'org.apache.httpcomponents:httpclient:4.2.5'
+    compile 'org.apache.httpcomponents:httpclient-cache:4.3.5'
+    compile 'org.apache.httpcomponents:httpcore:4.2.4'
+    compile 'org.apache.httpcomponents:httpmime:4.2.5'
+//    compile 'com.squareup.okhttp:okhttp:2.0.0'
+//    compile 'com.squareup.okio:okio:1.0.1'
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+}
