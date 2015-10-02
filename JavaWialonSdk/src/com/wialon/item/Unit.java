@@ -17,7 +17,10 @@
 package com.wialon.item;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.wialon.core.Session;
+import com.wialon.item.prop.ItemProperties;
+import com.wialon.item.prop.Sensor;
 import com.wialon.messages.Message;
 import com.wialon.messages.UnitData;
 import com.wialon.remote.RemoteHttpClient;
@@ -26,7 +29,6 @@ import com.wialon.remote.handlers.ResponseHandler;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class Unit extends ItemIcon {
 	private String uid;
@@ -42,8 +44,18 @@ public class Unit extends ItemIcon {
 	private Long cneh;
 	private Long cnkb;
 	private Map<String, Object> prms;
-	public Map<String, String> flds;
-	private String address;
+	private Sensor sensorPlugin;
+	private Map<String, String> sens;
+	private Map<String, String> cml;
+	private ItemProperties commandDefinitionsPlugin;
+
+	public ItemProperties getCommandDefinitionsPlugin() {
+		return commandDefinitionsPlugin == null ? commandDefinitionsPlugin = new ItemProperties(cml, "cml", this, events.updateCommandDefinition, "unit/update_command_definition") : commandDefinitionsPlugin;
+	}
+
+	public Sensor getSensorPlugin() {
+		return sensorPlugin==null ? sensorPlugin=new Sensor(sens, "sens", this, events.updateSensor, "unit/update_sensor") : sensorPlugin;
+	}
 
 	public Unit () {
 		itemType=ItemType.avl_unit;
@@ -188,7 +200,7 @@ public class Unit extends ItemIcon {
 	}
 
 	/**
-	 * Unit mileage counter, in km
+	 * Unit mileage counter
 	 * @return mileage counter current value
 	 */
 	public Long getMileageCounter() {
@@ -279,17 +291,6 @@ public class Unit extends ItemIcon {
 	public UnitData getLastMessage() {
 		return lmsg;
 	}
-
-	/*Get address*/
-	public String getAddress() {
-		return address;
-	}
-
-	/*Set address*/
-	public void setAddress(String address) {
-		this.address = address;
-	}
-
 	/**
 	 * Schedule remote command to unit, require ACL of current user not lower then specified in command properties
 	 * @param commandName command name
@@ -300,9 +301,16 @@ public class Unit extends ItemIcon {
 	 * @param callback callback that get result of command scheduling
 	 */
 	public void remoteCommand(String commandName, String linkType, String param, int timeout, long flags, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("itemId", getId());
+		params.addProperty("commandName", commandName);
+		params.addProperty("linkType", linkType);
+		params.addProperty("param", param);
+		params.addProperty("timeout", timeout);
+		params.addProperty("flags", flags);
 		RemoteHttpClient.getInstance().remoteCall(
 				"unit/exec_cmd",
-				"{\"itemId\":" + getId() + ",\"commandName\":\"" + commandName + "\",\"linkType\":\"" + linkType + "\",\"param\":\"" + param + "\",\"timeout\":" + timeout + ",\"flags\":" + flags + "}",
+				params,
 				callback);
 	}
 
@@ -313,9 +321,13 @@ public class Unit extends ItemIcon {
 	 * @param callback callback that get result of server operation
 	 */
 	public void updateDeviceSettings (long deviceTypeId, String uniqueId, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("itemId", getId());
+		params.addProperty("deviceTypeId", deviceTypeId);
+		params.addProperty("uniqueId", uniqueId);
 		RemoteHttpClient.getInstance().remoteCall(
 				"unit/update_device_type",
-				"{\"itemId\":"+getId()+",\"deviceTypeId\":"+deviceTypeId+",\"uniqueId\":\""+uniqueId+"\"}",
+				params,
 				getOnUpdatePropertiesCallback(callback)
 		);
 	}
@@ -326,9 +338,12 @@ public class Unit extends ItemIcon {
 	 * @param callback callback that get result of server operation
 	 */
 	public void updatePhoneNumber(String phoneNumber, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("itemId", getId());
+		params.addProperty("phoneNumber", phoneNumber);
 		RemoteHttpClient.getInstance().remoteCall(
 				"unit/update_phone",
-				"{\"itemId\":"+getId()+",\"phoneNumber\":\""+phoneNumber+"\"}",
+				params,
 				getOnUpdatePropertiesCallback(callback));
 	}
 	/**
@@ -337,9 +352,12 @@ public class Unit extends ItemIcon {
 	 * @param callback callback that get result of server operation
 	 */
 	public void updatePhoneNumber2(String phoneNumber, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("itemId", getId());
+		params.addProperty("phoneNumber", phoneNumber);
 		RemoteHttpClient.getInstance().remoteCall(
 				"unit/update_phone2",
-				"{\"itemId\":"+getId()+",\"phoneNumber\":\""+phoneNumber+"\"}",
+				params,
 				getOnUpdatePropertiesCallback(callback));
 	}
 	/**
@@ -348,9 +366,12 @@ public class Unit extends ItemIcon {
 	 * @param callback callback that get result of server operation
 	 */
 	public void updateAccessPassword(String accessPassword, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("itemId", getId());
+		params.addProperty("accessPassword", accessPassword);
 		RemoteHttpClient.getInstance().remoteCall(
 				"unit/update_access_password",
-				"{\"itemId\":"+getId()+",\"accessPassword\":\""+accessPassword+"\"}",
+				params,
 				getOnUpdatePropertiesCallback(callback));
 	}
 	/**
@@ -521,8 +542,9 @@ public class Unit extends ItemIcon {
 		/** Unit commands aliases */
 		commandAliases(0x00080000),
 		/** Message parameters */
-		messageParams(0x00100000);
-
+		messageParams(0x00100000),
+		/** Position */
+		position(0x00400000);
 		private long value;
 
 		private dataFlag (long value) {
@@ -744,6 +766,8 @@ public class Unit extends ItemIcon {
 		/** Unit GPRS traffic counter property has changed */
 		changeTrafficCounter,
 		/** Message params has changed */
-		changeMessageParams
+		changeMessageParams,
+		updateSensor,
+		updateCommandDefinition
 	}
 }

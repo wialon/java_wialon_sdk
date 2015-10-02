@@ -28,7 +28,7 @@ import com.wialon.remote.handlers.ResponseHandler;
 import java.util.Collection;
 import java.util.Map;
 
-public abstract class ItemProperties {
+public class ItemProperties {
 	private Map<String, String> data;
 	private String ajaxPath;
 	private Enum event;
@@ -38,7 +38,7 @@ public abstract class ItemProperties {
 		this.data=data;
 	}
 
-	protected ItemProperties (Map<String, String> data, String propName, Item item, Enum event, String ajaxPath) {
+	public ItemProperties (Map<String, String> data, String propName, Item item, Enum event, String ajaxPath) {
 		this.data=data;
 		this.ajaxPath=ajaxPath;
 		this.event=event;
@@ -84,7 +84,9 @@ public abstract class ItemProperties {
 			JsonArray jsonArrayResult;
 			if (data!=null && jsonResult.isJsonArray() && (jsonArrayResult=jsonResult.getAsJsonArray()).size()==2) {
 				String id=jsonArrayResult.get(0).toString();
-				String newData=jsonArrayResult.get(1).toString();
+				String newData=null;
+				if (!jsonArrayResult.get(1).isJsonNull())
+					newData=jsonArrayResult.get(1).toString();
 				String oldData=data.get(id);
 				if (newData != null)
 					// update/create item
@@ -118,7 +120,7 @@ public abstract class ItemProperties {
 				jsonObject.addProperty("callMode", "create");
 				RemoteHttpClient.getInstance().remoteCall(
 						ajaxPath,
-						jsonObject.toString(),
+						jsonObject,
 						new ResponseHandler(callback) {
 							@Override
 							public void onSuccess(String response) {
@@ -137,16 +139,16 @@ public abstract class ItemProperties {
 	 * @param itemJson Json item
 	 * @param callback callback function
 	 */
-	public void updateProperty(String itemJson, ResponseHandler callback) {
+	public void updateProperty(String itemJson, String callMode, ResponseHandler callback) {
 		if (itemJson!=null) {
 			JsonElement json=Session.getInstance().getJsonParser().parse(itemJson);
 			if (json.isJsonObject()) {
 				JsonObject jsonObject=json.getAsJsonObject();
 				jsonObject.addProperty("itemId", item.getId());
-				jsonObject.addProperty("callMode", "update");
+				jsonObject.addProperty("callMode", callMode==null ? "update" : callMode);
 				RemoteHttpClient.getInstance().remoteCall(
 						ajaxPath,
-						jsonObject.toString(),
+						jsonObject,
 						new ResponseHandler(callback) {
 							@Override
 							public void onSuccess(String response) {
@@ -158,6 +160,10 @@ public abstract class ItemProperties {
 			}
 		}
 		callback.onFailure(4, null);
+	}
+
+	public void updateProperty(String itemJson, ResponseHandler callback) {
+		updateProperty(itemJson, null, callback);
 	}
 	/**
 	 * Delete property item

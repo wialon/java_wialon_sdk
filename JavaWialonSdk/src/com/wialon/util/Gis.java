@@ -41,6 +41,17 @@ public class Gis {
 				level_houses = 5;
 	}
 
+	/** Geocoding (getLocations) params, SAG */
+	public static class GeocodingParams {
+		public int flags = 0;
+		public double city_radius = 0;
+		public double dist_from_unit = 0;
+		public String txt_dist = "";
+		public int house_detect_radius = 0;
+	}
+
+	public static GeocodingParams geocodingParams = new GeocodingParams();
+
 
 	/**
 	 * Calculate flags for geocodingParams based on levels of hierarchy addresses
@@ -76,10 +87,14 @@ public class Gis {
 	 * @param callback callback function that is called after remote call: callback(code, locations), locations is array of strings same count as source array
 	 *                 all other parameters passed through in structure geocodingParams
 	 */
-	public static void getLocations(String coords, int levelFlags, ResponseHandler callback) {
+	public static void getLocations(String coords, ResponseHandler callback) {
 		Map<String, String> nameValuePairs = new HashMap<String, String>();
 		nameValuePairs.put("coords", coords);
-		nameValuePairs.put("flags", String.valueOf(levelFlags));
+		nameValuePairs.put("flags", String.valueOf(geocodingParams.flags));
+		nameValuePairs.put("city_radius",  String.valueOf(geocodingParams.city_radius));
+		nameValuePairs.put("dist_from_unit", String.valueOf(geocodingParams.dist_from_unit));
+		nameValuePairs.put("txt_dist", geocodingParams.txt_dist);
+		nameValuePairs.put("house_detect_radius", String.valueOf(geocodingParams.house_detect_radius));
 		nameValuePairs.put("uid", String.valueOf(Session.getInstance().getCurrUser().getId()));
 		RemoteHttpClient.getInstance().get(Session.getInstance().getBaseGisUrl(Session.GisType.GEOCODE) + "/gis_geocode", nameValuePairs, callback);
 	}

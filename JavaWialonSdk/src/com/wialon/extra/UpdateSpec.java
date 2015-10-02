@@ -21,6 +21,7 @@ public class UpdateSpec {
 	private Object data;
 	private long flags;
 	private int mode;
+	private int max_items=-1;
 
 	public String getType() {
 		return type;
@@ -52,5 +53,13 @@ public class UpdateSpec {
 
 	public void setFlags(long flags) {
 		this.flags = flags;
+	}
+
+	public int getMaxItems() {
+		return max_items;
+	}
+
+	public void setMaxItems(int maxItems) {
+		this.max_items = maxItems;
 	}
 }

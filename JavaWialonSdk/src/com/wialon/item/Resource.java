@@ -32,7 +32,7 @@ public class Resource extends Item {
 	private Report reportPlugin;
 	private ItemPropertiesData notificationPlugin;
 
-	public Report loadReportPlugin(){
+	public Report getReportPlugin(){
 		return reportPlugin==null ? reportPlugin=new Report(rep, "rep", this, "report/update_report", "report/get_report_data") : reportPlugin;
 	}
 

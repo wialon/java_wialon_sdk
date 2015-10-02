@@ -19,7 +19,10 @@ package com.wialon.util;
 import com.wialon.core.Session;
 import com.wialon.item.User;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.SimpleTimeZone;
+import java.util.TimeZone;
 
 public class DateTime {
 	/**
@@ -56,12 +59,12 @@ public class DateTime {
 					daylightSavingsTime.mStartDay,
 					daylightSavingsTime.mStartDayOfWeek,
 					daylightSavingsTime.mStartTime,
-					daylightSavingsTime.mStartTimeMode,
+					/*daylightSavingsTime.mStartTimeMode,*/
 					daylightSavingsTime.mEndMonth,
 					daylightSavingsTime.mEndDay,
 					daylightSavingsTime.mEndDayOfWeek,
 					daylightSavingsTime.mEndTime,
-					daylightSavingsTime.mEndTimeMode,
+				/*	daylightSavingsTime.mEndTimeMode,*/
 					daylightSavingsTime.mDaylightSavings);
 		} else
 			return new SimpleTimeZone(DateTime.getTimezoneOffset()*1000, String.valueOf(timeZoneOffset));
@@ -188,12 +191,12 @@ public class DateTime {
 					daylightSavingsTime.mStartDay,
 					daylightSavingsTime.mStartDayOfWeek,
 					daylightSavingsTime.mStartTime,
-					daylightSavingsTime.mStartTimeMode,
+					/*daylightSavingsTime.mStartTimeMode,*/
 					daylightSavingsTime.mEndMonth,
 					daylightSavingsTime.mEndDay,
 					daylightSavingsTime.mEndDayOfWeek,
 					daylightSavingsTime.mEndTime,
-					daylightSavingsTime.mEndTimeMode,
+				/*	daylightSavingsTime.mEndTimeMode,*/
 					daylightSavingsTime.mDaylightSavings));
 			calendar.getTime();
 		}

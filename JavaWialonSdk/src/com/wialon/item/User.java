@@ -17,12 +17,24 @@
 package com.wialon.item;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.wialon.core.Session;
+import com.wialon.item.prop.ItemProperties;
 import com.wialon.remote.RemoteHttpClient;
 import com.wialon.remote.handlers.ResponseHandler;
+
+import java.util.Map;
 
 public class User extends Item {
  	private Long fl;
 	private String hm;
+	private Map<String, String> mapps;
+	private ItemProperties mobileAppsPlugin;
+
+	public ItemProperties getMobileAppsPlugin(){
+		return mobileAppsPlugin ==null ? mobileAppsPlugin =new ItemProperties(mapps, "mapps", this, events.changeMobileApps, "user/update_mobile_app") : mobileAppsPlugin;
+	}
+
 
 	public User () {
 		itemType=ItemType.user;
@@ -91,9 +103,12 @@ public class User extends Item {
 	 * @param callback callback that will receive information about hosts mask update
 	 */
 	public void updateHostsMask(String hostsMask, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("userId", getId());
+		params.addProperty("hostsMask", hostsMask);
 		RemoteHttpClient.getInstance().remoteCall(
 				"user/update_hosts_mask",
-				"{\"userId\":"+getId()+",\"hostsMask\":\""+hostsMask+"\"}",
+				params,
 				getOnUpdatePropertiesCallback(callback));
 	}
 
@@ -113,9 +128,12 @@ public class User extends Item {
 	 * @param callback callback that will receive information about localization update
 	 */
 	public void updateLocale(String locale, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("userId", getId());
+		params.add("locale", Session.getInstance().getJsonParser().parse(locale));
 		RemoteHttpClient.getInstance().remoteCall(
 				"user/update_locale",
-				"{\"userId\":" + getId() + ",\"locale\":" + locale + "}",
+				params,
 				callback);
 	}
 
@@ -127,9 +145,13 @@ public class User extends Item {
 	 * @param callback callback that will receive information about password update
 	 */
 	public void updatePassword(String oldPassword, String newPassword, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("userId", getId());
+		params.addProperty("oldPassword", oldPassword);
+		params.addProperty("newPassword", newPassword);
 		RemoteHttpClient.getInstance().remoteCall(
 				"user/update_password",
-				"{\"userId\":"+getId()+",\"oldPassword\":\""+oldPassword+"\",\"newPassword\":\""+newPassword+"\"}",
+				params,
 				callback);
 	}
 
@@ -171,7 +193,9 @@ public class User extends Item {
 		/** User notifications plugin */
 		notifications(0x00000200),
 		/** User connectivity settings, e.g. hosts mask*/
-		connSettings(0x00000400);
+		connSettings(0x00000400),
+		/** User mobile apps */
+		mobileApps(0x00000800);
 		/** Flag value */
 		private long value;
 
@@ -270,6 +294,8 @@ public class User extends Item {
 		/** userFlags property has changed */
 		changeUserFlags,
 		/** hostsMask property has changed */
-		changeHostsMask
+		changeHostsMask,
+		/** mobile apps has changed */
+		changeMobileApps
 	}
 }

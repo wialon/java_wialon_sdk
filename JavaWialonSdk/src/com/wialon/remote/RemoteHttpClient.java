@@ -17,7 +17,7 @@
 package com.wialon.remote;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonElement;
 import com.wialon.core.Session;
 import com.wialon.remote.handlers.BinaryResponseHandler;
 import com.wialon.remote.handlers.ResponseHandler;
@@ -74,7 +74,7 @@ public class RemoteHttpClient {
 	 * @param callback function to call with result of AJAX call: callback(code, combinedCode). code is zero if no errors. combinedCode is zero if all combined requests where successfully.
 	 * @return if batch send to the server
 	 */
-	public boolean finishBatch(ResponseHandler callback) {
+	public boolean finishBatch(ResponseHandler callback, int timeoutMs) {
 		long threadId = Thread.currentThread().getId();
 		if (!batchCalls.containsKey(threadId)) {
 			callback.onFailure(2, null);
@@ -88,25 +88,31 @@ public class RemoteHttpClient {
 			return false;
 		}
 		// construct batch call json and select max timeout
-		String params = "[";
+		final int size = curCalls.size();
+		StringBuilder params = new StringBuilder("[");
 		final List<ResponseHandler> callbacks = new ArrayList<ResponseHandler>();
-		for (int i = 0; i < curCalls.size(); i++) {
+		for (int i = 0; i < size; i++) {
 			BatchCall call = curCalls.get(i);
-			params += "{\"svc\":\"" + call.svc + "\",\"params\":" + call.params + "}";
-			if (i + 1 < curCalls.size())
-				params += ",";
+			params.append("{\"svc\":\"").append(call.svc).append("\",\"params\":").append(call.params).append("}");
+			if (i + 1 < size)
+				params.append(",");
 			callbacks.add(call.callback);
 		}
-		params += "]";
+		params.append("]");
+
 		// reset batch call status
 		batchCalls.remove(threadId);
-		remoteCall("core/batch", params, new ResponseHandler(callback) {
+		remoteCall("core/batch", params.toString(), new ResponseHandler(callback) {
 			@Override
 			public void onSuccess(String response) {
 				onBatchCallCompleted(getCallback(), callbacks, response);
 			}
-		});
+		}, timeoutMs);
 		return true;
+	}
+
+	public boolean finishBatch(ResponseHandler callback){
+		return finishBatch(callback, BaseSdkHttpClient.DEFAULT_SOCKET_TIMEOUT);
 	}
 
 	/**
@@ -128,11 +134,24 @@ public class RemoteHttpClient {
 			return;
 		}
 		// fire callback for each call with its data
+		//int lastError=0;
 		for (int i = 0; i < resultsArray.size(); i++) {
-			batchCallbacks.get(i).onSuccess(resultsArray.get(i).toString());
+			JsonElement result=resultsArray.get(i);
+			if (result.isJsonObject() && result.getAsJsonObject().has("error")){
+				int error = result.getAsJsonObject().get("error").getAsInt();
+				if (error != 0) {
+					//lastError=error;
+					batchCallbacks.get(i).onFailure(error, null);
+				} else
+					batchCallbacks.get(i).onSuccess(result.toString());
+			} else
+				batchCallbacks.get(i).onSuccess(result.toString());
 		}
-		// finally fire our own callback
-		callback.onSuccess(results);
+		// finally fire our own callb0ack
+		//if (lastError!=0)
+			//callback.onFailure(lastError, null);
+		//else
+			callback.onSuccess(results);
 	}
 
 	private String getServicesUrl(String svc) {
@@ -145,7 +164,7 @@ public class RemoteHttpClient {
 	 * @param params request properties
 	 * @param callback function to call with result of AJAX call
 	 */
-	public void remoteCall(String svc, String params, ResponseHandler callback) {
+	public void remoteCall(String svc, String params, ResponseHandler callback, int timeoutMs) {
 		long threadId = Thread.currentThread().getId();
 		if (batchCalls.containsKey(threadId)) {
 			batchCalls.get(threadId).add(new BatchCall(svc, params, callback));
@@ -153,8 +172,16 @@ public class RemoteHttpClient {
 			Map<String, String> nameValuePairs = new HashMap<String, String>();
 			if (params != null)
 				nameValuePairs.put("params", params);
-			post(getServicesUrl(svc), nameValuePairs, callback);
+			post(getServicesUrl(svc), nameValuePairs, callback, timeoutMs);
 		}
+	}
+
+	public void remoteCall(String svc, String params, ResponseHandler callback){
+		remoteCall(svc, params, callback, BaseSdkHttpClient.DEFAULT_SOCKET_TIMEOUT);
+	}
+
+	public void remoteCall(String svc, JsonElement params, ResponseHandler callback) {
+		remoteCall(svc, Session.getInstance().getGson().toJson(params), callback);
 	}
 
 	/**
@@ -207,13 +234,20 @@ public class RemoteHttpClient {
 
 		private static void processStringAnswer(byte data[], ResponseHandler callback) {
 			String response = new String(data, Charset.forName("UTF-8"));
-			if (response.contains("error") &&
-					Session.getInstance().getJsonParser().parse(response).isJsonObject() &&
-					Session.getInstance().getJsonParser().parse(response).getAsJsonObject().has("error")) {
-				int error = new JsonParser().parse(response).getAsJsonObject().get("error").getAsInt();
-				if (error != 0)
-					callback.onFailure(error, null);
-				else
+			if (response.contains("error")) {
+				JsonElement responseJson=null;
+				try {
+					responseJson=Session.getInstance().getJsonParser().parse(response);
+				} catch (Exception e){
+					e.printStackTrace();
+				}
+				if (responseJson!=null && responseJson.isJsonObject() && responseJson.getAsJsonObject().has("error")){
+					int error = responseJson.getAsJsonObject().get("error").getAsInt();
+					if (error != 0)
+						callback.onFailure(error, null);
+					else
+						callback.onSuccess(response);
+				} else
 					callback.onSuccess(response);
 			} else
 				callback.onSuccess(response);

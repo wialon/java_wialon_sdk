@@ -159,4 +159,10 @@ public class MessagesLoader {
 		}
 		callback.onFailure(6, null);
 	}
+
+	public void getPackedMessages(long itemId, long timeFrom, long timeTo, ResponseHandler callback){
+		RemoteHttpClient.getInstance().remoteCall(
+				"messages/get_packed_messages",
+				"{\"itemId\":" + itemId+ ",\"timeFrom\":" + timeFrom+ ",\"timeTo\":" + timeTo+"}", callback);
+	}
 }

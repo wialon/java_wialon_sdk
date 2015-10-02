@@ -18,6 +18,8 @@ package com.wialon.item;
 
 import com.wialon.core.EventProvider;
 import com.wialon.core.Session;
+import com.wialon.item.prop.ItemProperties;
+import com.wialon.item.prop.ItemPropertiesData;
 import com.wialon.remote.RemoteHttpClient;
 import com.wialon.remote.handlers.ResponseHandler;
 import com.wialon.messages.Message;
@@ -43,7 +45,20 @@ public abstract class Item extends EventProvider {
 	private Map<String, UpdateItemProperty> updateItemPropertyFunctions;
 
 	protected ItemType itemType;
-	//Todo custom & admin fields
+
+	private ItemProperties customFieldsPlugin;
+	private Map<String, String> flds;
+	private ItemProperties adminFieldsPlugin;
+	private Map<String, String> aflds;
+
+
+	public ItemProperties getCustomFieldsPlugin() {
+		return customFieldsPlugin==null ? customFieldsPlugin=new ItemProperties(flds, "flds", this, events.updateCustomField, "item/update_custom_field") : customFieldsPlugin;
+	}
+
+	public ItemProperties getAdminFieldsPlugin() {
+		return adminFieldsPlugin==null ? adminFieldsPlugin=new ItemProperties(aflds, "aflds", this, events.updateAdminField, "item/update_admin_field") : adminFieldsPlugin;
+	}
 
 	public interface UpdateItemProperty {
 		public void updateItemProperty(JsonElement data);
@@ -215,9 +230,13 @@ public abstract class Item extends EventProvider {
 	 * @param callback callback that will receive information about property update
 	 */
 	public void updateCustomProperty(String propName, String propValue, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("itemId", getId());
+		params.addProperty("name", propName);
+		params.addProperty("value", propValue);
 			RemoteHttpClient.getInstance().remoteCall(
 				"item/update_custom_property",
-				"{\"itemId\":"+getId()+",\"name\":\""+propName+"\",\"value\":\""+propValue+"\"}",
+					params,
 				new ResponseHandler(callback) {
 					@Override
 					public void onSuccess(String response) {
@@ -243,9 +262,12 @@ public abstract class Item extends EventProvider {
 	 * @param callback callback that will receive information about update
 	 */
 	public void updateName(String name, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("itemId", getId());
+		params.addProperty("name", name);
 		RemoteHttpClient.getInstance().remoteCall(
 				"item/update_name",
-				"{\"itemId\":"+getId()+",\"name\":\""+name+"\"}",
+				params,
 				getOnUpdatePropertiesCallback(callback));
 	}
 	/**
@@ -256,9 +278,14 @@ public abstract class Item extends EventProvider {
 	 * @param callback callback that get result of server operation
 	 */
 	public void addLogRecord(String action, String newValue, String oldValue, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("itemId", getId());
+		params.addProperty("action", action);
+		params.addProperty("newValue", (newValue==null?"":newValue));
+		params.addProperty("oldValue", (oldValue==null?"":oldValue));
 		RemoteHttpClient.getInstance().remoteCall(
 				"item/add_log_record",
-				"{\"itemId\":"+getId()+",\"action\":\""+action+"\",\"newValue\":\""+(newValue==null?"":newValue)+"\",\"oldValue\":\""+(oldValue==null?"":oldValue)+"\"}",
+				params,
 				callback);
 	}
 	/**
@@ -275,6 +302,7 @@ public abstract class Item extends EventProvider {
 				setCustomProperty(resultObject.get("n").getAsString(), resultObject.get("v").getAsString());
 				// pass result to callback if available
 				callback.onSuccess(result);
+				return;
 			}
 		}
 		callback.onFailure(6, null);
@@ -476,7 +504,9 @@ public abstract class Item extends EventProvider {
 		 * {@code oldData - }{@see Long} {@code itemID}<br/>
 		 * {@code newData - null}
 		 * */
-		itemDeleted,
+		updateCustomField,
+		updateAdminField,
+ 		itemDeleted,
 		/** messages registry */
 		messageRegistered,
 		/** item measure units has changed*/
@@ -514,7 +544,7 @@ public abstract class Item extends EventProvider {
 			this.value=value;
 		}
 
-		public long getValue() {
+		public int getValue() {
 			return value;
 		}
 	}

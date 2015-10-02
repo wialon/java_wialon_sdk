@@ -17,6 +17,7 @@
 package com.wialon.item;
 
 import com.google.gson.JsonElement;
+import com.wialon.core.EventProvider;
 import com.wialon.core.Session;
 import com.wialon.remote.handlers.BinaryResponseHandler;
 import com.wialon.remote.RemoteHttpClient;
@@ -30,12 +31,23 @@ import java.io.InputStream;
  */
 public class ItemIcon extends Item {
 	private Integer ugi;
+	private String uri;
 
 	private void setUgi(Integer ugi) {
 		if (this.ugi == null || !this.ugi.equals(ugi)) {
 			Integer oldUgi = this.ugi == null ? null : new Integer(this.ugi);
 			this.ugi = ugi;
 			fireEvent(events.changeIcon, this, oldUgi, ugi);
+		}
+	}
+
+	private void setUri(String uri) {
+		if (this.uri == null || !this.uri.equals(uri)) {
+			String oldUri = this.uri == null ? null : new String(this.uri);
+			this.uri = uri;
+			fireEvent(events.changeIconUri, this, oldUri, uri);
+			//TODO: remove after change listeners to changeIconUri
+			fireEvent(events.changeIcon, this, null, uri);
 		}
 	}
 
@@ -48,6 +60,10 @@ public class ItemIcon extends Item {
 	public String getIconUrl(int borderSize) {
 		if (borderSize <= 0)
 			borderSize = 32;
+		if (uri != null) {
+			uri = uri.replaceAll(" ", "%20");
+			return Session.getInstance().getBaseUrl() + uri + "?b=" + borderSize;
+		}
 		return Session.getInstance().getBaseUrl() + "/avl_item_image/" + this.getId() + "/" + borderSize + "/" + ugi + ".png";
 	}
 
@@ -62,6 +78,8 @@ public class ItemIcon extends Item {
 		else {
 			if (key.equals("ugi") && data.getAsNumber() != null)
 				setUgi(data.getAsInt());
+			else if (key.equals("uri") && data.getAsString() !=null)
+				setUri(data.getAsString());
 			else
 				return false;
 			return true;
@@ -81,6 +99,8 @@ public class ItemIcon extends Item {
 		/**
 		 * icon property has changed
 		 */
-		changeIcon
+		changeIcon,
+		/** iconUri property has changed */
+		changeIconUri
 	}
 }

@@ -16,6 +16,7 @@
 
 package com.wialon.render;
 
+import com.google.gson.JsonObject;
 import com.wialon.core.EventProvider;
 import com.wialon.core.Session;
 import com.wialon.extra.LayerSpec;
@@ -24,8 +25,6 @@ import com.wialon.extra.ZonesSpec;
 import com.wialon.remote.RemoteHttpClient;
 import com.wialon.remote.handlers.LayerResponseHandler;
 import com.wialon.remote.handlers.ResponseHandler;
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
 
 import java.util.*;
 
@@ -82,9 +81,19 @@ public class Renderer extends EventProvider {
 	 * @param callback  function that is called after renderer initialization
 	 */
 	public void setLocale(int tzOffset, String language, ResponseHandler callback) {
+		setLocale(tzOffset, language, 0, callback);
+	}
+
+
+	public void setLocale(int tzOffset, String language, int density, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("tzOffset", tzOffset);
+		params.addProperty("language", language);
+		if (density!=0)
+			params.addProperty("density", density);
 		// perform remote call for initialization
 		RemoteHttpClient.getInstance().remoteCall("render/set_locale",
-				"{\"tzOffset\":"+tzOffset+",\"language\":\""+language+"\"}",
+				params,
 				callback);
 	}
 	/**
@@ -115,10 +124,13 @@ public class Renderer extends EventProvider {
 		for (Layer layer : this.layers)
 			if (layer.getName().equals(layerName))
 				this.layers.remove(layer);
-		String poisArray=Session.getInstance().getGson().toJson(pois);
+		JsonObject params=new JsonObject();
+		params.addProperty("layerName", layerName);
+		params.add("pois",  Session.getInstance().getGson().toJsonTree(pois));
+		params.addProperty("flags", flags);
 		RemoteHttpClient.getInstance().remoteCall(
 				"render/create_poi_layer",
-				"{\"layerName\":\""+layerName+"\",\"pois\":"+poisArray+",\"flags\":"+flags+"}",
+				params,
 		new ResponseHandler(callback) {
 			@Override
 			public void onSuccess(String response) {
@@ -135,13 +147,18 @@ public class Renderer extends EventProvider {
 	 * @param callback callback that will receive information about new layer addition
 	 */
 	public void createZonesLayer(String layerName, ZonesSpec[] zones, int flags, LayerResponseHandler callback) {
+		List<Layer> layersToRemove = new ArrayList<Layer>();
 		for (Layer layer : this.layers)
-			if (layer.getName().equals(layerName))
-				this.layers.remove(layer);
-		String zonesArray=Session.getInstance().getGson().toJson(zones);
+			if (layerName.equals(layer.getName()))
+				layersToRemove.add(layer);
+		this.layers.removeAll(layersToRemove);
+		JsonObject params=new JsonObject();
+		params.addProperty("layerName", layerName);
+		params.add("zones", Session.getInstance().getGson().toJsonTree(zones));
+		params.addProperty("flags", flags);
 		RemoteHttpClient.getInstance().remoteCall(
 				"render/create_zones_layer",
-				"{\"layerName\":\""+layerName+"\",\"zones\":"+zonesArray+",\"flags\":"+flags+"}",
+				params,
 				new ResponseHandler(callback) {
 					@Override
 					public void onSuccess(String response) {
@@ -156,9 +173,11 @@ public class Renderer extends EventProvider {
 	 * @param callback callback that will receive information about new layer removal
 	 */
 	public void removeLayer(final Layer layer, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("layerName", layer.getName());
 		RemoteHttpClient.getInstance().remoteCall(
 				"render/remove_layer",
-				"{\"layerName\":\""+layer.getName()+"\"}",
+				params,
 				new ResponseHandler(callback) {
 					@Override
 					public void onSuccess(String response) {
@@ -174,9 +193,12 @@ public class Renderer extends EventProvider {
 	 * @param callback  callback that will receive information about layer update
 	 */
 	public void enableLayer(final Layer layer, boolean enable, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("layerName", layer.getName());
+		params.addProperty("enable", (enable ? 1 : 0));
 		RemoteHttpClient.getInstance().remoteCall(
 				"render/enable_layer",
-				"{\"layerName\":\""+layer.getName()+"\",\"enable\":"+(enable ? 1 : 0)+"}",
+				params,
 				new ResponseHandler(callback) {
 					@Override
 					public void onSuccess(String response) {

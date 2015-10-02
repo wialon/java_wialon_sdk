@@ -29,10 +29,7 @@ import com.google.gson.*;
 
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Wialon session static object.
@@ -42,6 +39,8 @@ public class Session extends EventProvider {
 	private static final Session instance = new Session();
 	/** base URL for Wialon server*/
 	private String baseUrl;
+	/** Should we use embedded(internal) GIS service */
+	private boolean internalGis=false;
 	/** Session ID */
 	private String sessionId;
 	/** Initialization state */
@@ -76,6 +75,14 @@ public class Session extends EventProvider {
 	}
 
 	private Session() {
+	}
+
+	public boolean isInternalGis(){
+		return internalGis;
+	}
+
+	public void setInternalGis (boolean isEnabled){
+		internalGis=isEnabled;
 	}
 
 	public JsonParser getJsonParser(){
@@ -163,7 +170,10 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
-		httpClient.remoteCall("core/login", "{\"user\":\"" + user + "\",\"password\":\"" + password + "\"}", new ResponseHandler(callback){
+		JsonObject params=new JsonObject();
+		params.addProperty("user", user);
+		params.addProperty("password", password);
+		httpClient.remoteCall("core/login", params, new ResponseHandler(callback){
 			@Override
 			public void onSuccess(String response) {
 				onLoginResult(response, this.getCallback());
@@ -181,7 +191,37 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
-		httpClient.remoteCall("core/use_auth_hash", "{\"authHash\":\""+authHash+"\"}", new ResponseHandler(callback){
+		JsonObject params=new JsonObject();
+		params.addProperty("authHash", authHash);
+		httpClient.remoteCall("core/use_auth_hash",
+				authHash,
+				new ResponseHandler(callback){
+			@Override
+			public void onSuccess(String response) {
+				onLoginResult(response, this.getCallback());
+			}
+		});
+	}
+
+	public void loginToken (String token, ResponseHandler callback){
+		loginToken(token, null, callback);
+	}
+
+	/**
+	 * Perform login to Wialon server using authorization token. Auth token can be fetched with Session.updateToken
+	 * @param token authorization token
+	 * @param callback callback function that is called after login
+	 */
+	public void loginToken (String token, String service, ResponseHandler callback) {
+		if (currUser!=null || !isInitialized()) {
+			callback.onFailure(2, null);
+			return;
+		}
+		JsonObject params=new JsonObject();
+		params.addProperty("token", token);
+		if (service!=null)
+			params.addProperty("checkService", service);
+		httpClient.remoteCall("token/login", params, new ResponseHandler(callback) {
 			@Override
 			public void onSuccess(String response) {
 				onLoginResult(response, this.getCallback());
@@ -190,28 +230,73 @@ public class Session extends EventProvider {
 	}
 
 	/**
+	 * Create/Update/Delete authorization token
+	 * @param callMode operation mode with the authorization token (create/update/delete)
+	 * @param token JSON object parameters with keys:
+	 *              TODO:
+	 *		h authorization token hash (only 'update'/'delete')
+	 *		app application name for which was created token
+	 *		at specifies time ranges token will be active (0 - activation current time)
+	 *		dur proposed token validity duration in seconds (0 - unlimited duration)
+	 *		fl mask for additional ACL restrictions
+	 *		p additional JSON data
+	 *		items limit access to only this collection of storage items
+	 *		deleteAll delete all available tokens (only 'delete')
+	 */
+	public void updateToken(String callMode, String token, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("callMode", callMode);
+		params.addProperty("h", token);
+		RemoteHttpClient.getInstance().remoteCall("token/update", params.toString(), callback);
+	}
+	/**
+	 * Get all available authorization tokens
+	 * @param app application name for which was created token, optional
+	 * @param callback callback that get result of server operation
+	 */
+	public void listTokens(String app, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("app", app);
+		RemoteHttpClient.getInstance().remoteCall("token/list", params, callback);
+	}
+
+	/**
 	 * Logout from Wialon server.
 	 * @param callback {ResponseHandler} callback function that is called after logout: where zero is success
 	 */
 	public void logout(ResponseHandler callback) {
+		logout(0x3, callback);
+	}
+
+	// Logout flags:
+	// 0x1 - cleanup session immediately
+	// 0x2 - make server logout
+	// 0x4 - clean session at server callback
+	public void logout(final int flags, ResponseHandler callback) {
 		if (currUser==null && callback!=null) {
 			callback.onFailure(2, null);
 			return;
 		}
-		httpClient.remoteCall("core/logout", "{}", new ResponseHandler(callback) {
-			@Override
-			public void onSuccess(String response) {
-				//cleanupSession();
-				super.onSuccess(response);
-			}
-			@Override
-			public void onFailure(int errorCode, Throwable throwableError) {
-				//cleanupSession();
-				super.onFailure(errorCode, throwableError);
-			}
-		});
+		if ((flags&0x2)==0x2) {//make server logout
+			httpClient.remoteCall("core/logout", "{}", new ResponseHandler(callback) {
+				@Override
+				public void onSuccess(String response) {
+					if ((flags & 0x4) == 0x4)//clean session at server callback
+						cleanupSession();
+					super.onSuccess(response);
+				}
+
+				@Override
+				public void onFailure(int errorCode, Throwable throwableError) {
+					if ((flags & 0x4) == 0x4)//clean session at server callback
+						cleanupSession();
+					super.onFailure(errorCode, throwableError);
+				}
+			});
+		}
 		//Clean up session immediately
-		cleanupSession();
+		if ((flags&0x1)==0x1)
+			cleanupSession();
 	}
 
 	/**
@@ -372,17 +457,27 @@ public class Session extends EventProvider {
 	}
 
 	/**
-	 * Get all available hardware types
-	 * @param callback callback function that is called after remote call on success is a object collection of hw types: {ID: {id: ID, name: NAME}, ...}
+	 * Get hardware types
+	 * @param filterType filter type (name, id, type) or null to ignore
+	 * @param filterValue filter value String[] for filterType="name" or "type" and Long[] for filterType="id", pass null to ignore
+	 * @param includeType Whether add type to hardware params, pass null to ignore
+	 * @param callback callback function that is called after remote call
 	 */
-	public void getHwTypes(ResponseHandler callback) {
-		if (currUser==null) {
+	public void getHwTypes(String filterType, Object[] filterValue, Boolean includeType,  ResponseHandler callback) {
+		if (currUser == null) {
 			callback.onFailure(2, null);
 			return;
 		}
+		JsonObject params=new JsonObject();
+		if (filterType!=null && filterValue!=null) {
+			params.addProperty("filterType", filterType);
+			params.add("filterValue", gson.toJsonTree(filterValue));
+		}
+		if (includeType!=null)
+			params.addProperty("includeType", includeType);
 		httpClient.remoteCall(
 				"core/get_hw_types",
-				"{}",
+				params,
 				callback
 		);
 	}
@@ -418,20 +513,22 @@ public class Session extends EventProvider {
 	 * @return {Integer} 0 - N/A, -1 - available, but no more services of given type, 1 - available and more services can be requested
 	 */
 	public int checkFeature(String feature) {
-		JsonObject svcs=features.get("svcs").getAsJsonObject();
-		if (features==null || svcs==null)
-			return 0;
-		if (!svcs.has(feature)) {
-			// check billing plan for unlimited services
-			if (features.has("unlim") && features.get("unlim").getAsInt() == 1)
+		if (features != null && features.has("svcs")) {
+			JsonObject svcs=features.get("svcs").getAsJsonObject();
+			if (features==null || svcs==null)
+				return 0;
+			if (!svcs.has(feature)) {
+				// check billing plan for unlimited services
+				if (features.has("unlim") && features.get("unlim").getAsInt() == 1)
+					return 1;
+				return 0;
+			}
+			int featureVal = svcs.get(feature).getAsInt();
+			if (featureVal == 1)
 				return 1;
-			return 0;
+			else if (featureVal == 0)
+				return -1;
 		}
-		int featureVal = svcs.get(feature).getAsInt();
-		if (featureVal == 1)
-			return 1;
-		else if (featureVal == 0)
-			return -1;
 		return 0;
 	}
 
@@ -448,9 +545,14 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
+		JsonObject params=new JsonObject();
+		params.addProperty("creatorId", creator.getId());
+		params.addProperty("name", name);
+		params.addProperty("hwTypeId", hwTypeId);
+		params.addProperty("dataFlags", dataFlags);
 		httpClient.remoteCall(
 				"core/create_unit",
-				"{\"creatorId\":"+creator.getId()+",\"name\":\""+name+"\",\"hwTypeId\":"+hwTypeId+",\"dataFlags\":"+dataFlags+"}",
+				params,
 				getOnSearchItemResultCallback(callback)
 		);
 	}
@@ -467,9 +569,14 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
+		JsonObject params=new JsonObject();
+		params.addProperty("creatorId", creator.getId());
+		params.addProperty("name", name);
+		params.addProperty("password", password);
+		params.addProperty("dataFlags", dataFlags);
 		httpClient.remoteCall(
 				"core/create_user",
-				"{\"creatorId\":"+creator.getId()+",\"name\":\""+name+"\",\"password\":\""+password+"\",\"dataFlags\":"+dataFlags+"}",
+				params,
 				getOnSearchItemResultCallback(callback)
 		);
 	}
@@ -486,9 +593,13 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
+		JsonObject params=new JsonObject();
+		params.addProperty("creatorId", creator.getId());
+		params.addProperty("name", name);
+		params.addProperty("dataFlags", dataFlags);
 		httpClient.remoteCall(
 				"core/create_unit_group",
-				"{\"creatorId\":"+creator.getId()+",\"name\":\""+name+"\",\"dataFlags\":"+dataFlags+"}",
+				params,
 				getOnSearchItemResultCallback(callback)
 		);
 	}
@@ -505,9 +616,13 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
+		JsonObject params=new JsonObject();
+		params.addProperty("creatorId", creator.getId());
+		params.addProperty("name", name);
+		params.addProperty("dataFlags", dataFlags);
 		httpClient.remoteCall(
 				"core/create_resource",
-				"{\"creatorId\":"+creator.getId()+",\"name\":\""+name+"\",\"dataFlags\":"+dataFlags+"}",
+				params,
 				getOnSearchItemResultCallback(callback)
 		);
 	}
@@ -556,9 +671,15 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
+		JsonObject params=new JsonObject();
+		params.addProperty("user", user.getName());
+		params.addProperty("email", email);
+		params.addProperty("emailFrom", emailFrom);
+		params.addProperty("url", url);
+		params.addProperty("lang", lang);
 		httpClient.remoteCall(
 				"core/reset_password_request",
-				"{\"user\":\""+user.getName()+"\",\"email\":\""+email+"\",\"emailFrom\":\""+emailFrom+"\",\"url\":\""+url+"\",\"lang\":\""+lang+"\"}",
+				params,
 				callback
 		);
 	}
@@ -573,9 +694,12 @@ public class Session extends EventProvider {
 			callback.onFailure(2, null);
 			return;
 		}
+		JsonObject params=new JsonObject();
+		params.addProperty("user", user.getName());
+		params.addProperty("code", code);
 		httpClient.remoteCall(
 				"core/reset_password_perform",
-				"{\"user\":\""+user.getName()+"\",\"code\":\""+code+"\"}",
+				params,
 				callback
 		);
 	}
@@ -586,9 +710,12 @@ public class Session extends EventProvider {
 	 * @param callback callback that will receive information about SMS send operation
 	 */
 	public void sendSms(String phoneNumber, String smsText, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("phoneNumber", phoneNumber);
+		params.addProperty("smsText", smsText);
 		httpClient.remoteCall(
 				"user/send_sms",
-				"{\"phoneNumber\":\""+phoneNumber+"\",\"smsText\":\""+smsText+"\"}",
+				params,
 				callback
 		);
 	}
@@ -610,9 +737,13 @@ public class Session extends EventProvider {
 	 * @param callback function to call with result of remote call and data contain collection of items IDs that can be used for such billing service.
 	 */
 	public void checkItemsBilling (Long[] items, String serviceName, Long accessFlags, ResponseHandler callback) {
+		JsonObject params=new JsonObject();
+		params.addProperty("items", gson.toJson(items));
+		params.addProperty("serviceName", serviceName);
+		params.addProperty("accessFlags", accessFlags);
 		httpClient.remoteCall(
 				"core/check_items_billing",
-				"{\"items\":"+gson.toJson(items)+",\"serviceName\":\""+serviceName+"\",\"accessFlags\":"+accessFlags+"}",
+				params,
 				callback
 		);
 	}
@@ -640,7 +771,7 @@ public class Session extends EventProvider {
 	 * @return {String} base URL suitable for prepending GIS requests of given type
 	 */
 	public String getBaseGisUrl(GisType gisType) {
-		if (!baseUrl.equals("")) {
+		if (!internalGis && baseUrl!=null && !baseUrl.equals("")) {
 			// extract DNS of Wialon server from base URL (e.g. remote://kit-api.wialon.com)
 			String[] arr = baseUrl.split("//");
 			if (arr.length >= 2) {
@@ -700,8 +831,8 @@ public class Session extends EventProvider {
 			if (sessionJson==null || !sessionJson.isJsonObject())
 				return false;
 			//Init maps and collections
-			itemsById=new HashMap<Long, Item>();
-			itemsByType=new HashMap<Item.ItemType, List<Item>>();
+			itemsById=new ConcurrentHashMap<Long, Item>();
+			itemsByType=new ConcurrentHashMap<Item.ItemType, List<Item>>();
 			classes=new HashMap<Integer, Item.ItemType>();
 			JsonObject sessionObject=((JsonObject)sessionJson);
 			for (Map.Entry entry : sessionObject.get("classes").getAsJsonObject().entrySet()) {
@@ -804,7 +935,9 @@ public class Session extends EventProvider {
 				// update items data, construct new items
 				long itemId=responseItems.get(i).getAsJsonObject().get("i").getAsLong();
 				long itemFlags=responseItems.get(i).getAsJsonObject().get("f").getAsLong();
-				JsonObject itemData=responseItems.get(i).getAsJsonObject().get("d").getAsJsonObject();
+				JsonObject itemData=null;
+				if (responseItems.get(i).getAsJsonObject().get("d").isJsonObject())
+					itemData=responseItems.get(i).getAsJsonObject().get("d").getAsJsonObject();
 				// check if we need to construct this item
 				Item item=itemsById.get(itemId);
 				if (item==null && itemFlags!=0 && itemData!=null) {
@@ -853,7 +986,7 @@ public class Session extends EventProvider {
 		itemsById.put(item.getId(), item);
 		List <Item> itemsByCurrentType=itemsByType.get(item.getItemType());
 		if (itemsByCurrentType==null) {
-			itemsByCurrentType=new ArrayList<Item>();
+			itemsByCurrentType=Collections.synchronizedList(new ArrayList<Item>());
 			itemsByType.put(item.getItemType(), itemsByCurrentType);
 		}
 		itemsByCurrentType.add(item);

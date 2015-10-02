@@ -17,10 +17,10 @@
 package com.wialon.core;
 
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class EventProvider {
 	private Map<Enum, List<EventHandler>> eventHandlers=new HashMap<Enum, List<EventHandler>>();
@@ -34,7 +34,7 @@ public abstract class EventProvider {
 		for (Enum event : events){
 			List<EventHandler> handlers=eventHandlers.get(event);
 			if (handlers==null) {
-				handlers=new ArrayList<EventHandler>();
+				handlers=new CopyOnWriteArrayList<EventHandler>();
 				eventHandlers.put(event, handlers);
 			}
 			if (!handlers.contains(eventHandler))
@@ -45,12 +45,14 @@ public abstract class EventProvider {
 	/**
 	 * Removes handler from provider
 	 * @param eventHandler handler which want to remove
-	 * @param event event type
+	 * @param events event types
 	 */
-	public void removeListener(EventHandler eventHandler, Enum event){
-		List<EventHandler> handlers=eventHandlers.get(event);
-		if (handlers!=null)
-			handlers.remove(eventHandler);
+	public void removeListener(EventHandler eventHandler, Enum... events){
+		for (Enum event : events){
+			List<EventHandler> handlers=eventHandlers.get(event);
+			if (handlers!=null)
+				handlers.remove(eventHandler);
+		}
 	}
 
 	/**
