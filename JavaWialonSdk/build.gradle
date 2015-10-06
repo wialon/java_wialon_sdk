@@ -2,7 +2,7 @@ apply plugin: 'java'
 
 archivesBaseName = 'wialon-sdk'
 sourceCompatibility = 1.6
-version = '1.2.39'
+version = '1.3.57'
 
 sourceSets {
     main {
